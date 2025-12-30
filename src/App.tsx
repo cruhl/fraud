@@ -1350,7 +1350,7 @@ export function App() {
                 textShadow: "0 0 60px rgba(212, 180, 92, 0.15)",
               }}
             >
-              <span className="md:hidden">MINNESOTA</span>
+              <span className="md:hidden">MINNESOTA FRAUD RUN</span>
               <span className="hidden md:inline">FRAUD RUN</span>
             </h1>
             {/* Tagline - hidden on very small screens */}
