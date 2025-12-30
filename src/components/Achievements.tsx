@@ -29,7 +29,7 @@ export function Achievements({ inMenu = false }: Achievements.Props) {
     viralViews,
     fakeClaims,
     prestigeLevel: totalArrestCount,
-    goldenClaimsCaught: lifetimeStats?.goldenClaimsCaught ?? 0,
+    goldenClaimsCaught: lifetimeStats?.totalGoldenClaimsCaught ?? 0,
     prestigeEarned: lifetimeStats?.totalMoneyEarned ?? 0,
   }), [totalEarned, viralViews, fakeClaims, totalArrestCount, lifetimeStats]);
 

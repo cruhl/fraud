@@ -65,6 +65,7 @@ export const saveGame = (name: string): SaveMetadata => {
     maxThreatLevelReached: state.maxThreatLevelReached,
     isGameOver: state.isGameOver,
     isVictory: state.isVictory,
+    victoryDismissed: state.victoryDismissed,
     isArrested: state.isArrested,
     isPaused: state.isPaused,
     activeZone: state.activeZone,
