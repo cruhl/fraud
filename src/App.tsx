@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { useGameStore, GameStore } from "~/store/gameStore";
 import { Clicker } from "~/components/Clicker";
 import { Counter } from "~/components/Counter";
@@ -1890,6 +1891,9 @@ export function App() {
 
       {/* Golden claim floating bonus */}
       <GoldenClaim />
+
+      {/* Vercel Analytics */}
+      <Analytics />
     </div>
   );
 }
