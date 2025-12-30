@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useGameStore, GameStore } from "~/store/gameStore";
 import { getCharacterImageUrl } from "~/lib/assets";
+import { ZONES } from "~/data/zones";
 
 // Nick Shirley character portrait URL
 const NICK_SHIRLEY_IMAGE = getCharacterImageUrl("nick-shirley");
@@ -321,12 +322,11 @@ export function ViralMeter() {
           >
             Nick Shirley spotted in{" "}
             <span 
-              className="font-semibold capitalize"
+              className="font-semibold"
               style={{ color: "var(--color-corruption)" }}
             >
-              {nickShirleyLocation}
-            </span>{" "}
-            district
+              {ZONES.find((z) => z.id === nickShirleyLocation)?.name ?? nickShirleyLocation}
+            </span>
           </span>
           {isNickHere && (
             <span 

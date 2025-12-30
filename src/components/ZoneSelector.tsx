@@ -173,8 +173,8 @@ export function ZoneSelector({ compact = false }: ZoneSelector.Props) {
           if (zone) setZoneSwitchFlash(zone.color);
           setTimeout(() => setSwitchingZone(null), 300);
           setTimeout(() => setZoneSwitchFlash(null), 200);
+          setActiveZone(zoneId);
         }
-        setActiveZone(zoneId);
       } else if (canAfford) {
         // Trigger unlock celebration!
         setUnlockingZone(zoneId);

@@ -368,7 +368,9 @@ export const useGameStore = create<GameStore>()(
 
       tick: () => {
         const state = get();
+        // Stop ticking if game over (arrested) or victory modal is showing
         if (state.isGameOver) return;
+        if (state.isVictory && !state.victoryDismissed) return;
 
         set((s) => {
           const now = Date.now();
@@ -1381,10 +1383,18 @@ export namespace GameStore {
   /**
    * Calculate evidence strength based on viral views and fake claims
    * Returns 0-1 where 1 = overwhelming evidence
+   * Uses logarithmic scaling for claims to prevent instant max in late game
    */
   export const getEvidenceStrength = (state: GameState): number => {
-    const viewsComponent = (state.viralViews / 80_000_000) * 0.6; // 60% weight
-    const claimsComponent = (state.fakeClaims / 5_000) * 0.4; // 40% weight
+    // Views: 60% weight, scales linearly to 80M
+    const viewsComponent = (state.viralViews / 80_000_000) * 0.6;
+    
+    // Claims: 40% weight, uses logarithmic scaling
+    // log10(1000) = 3, log10(100000) = 5, log10(10000000) = 7
+    // Scale so 1000 claims = 0.1, 100K = 0.25, 10M = 0.4
+    const claimsLog = state.fakeClaims > 0 ? Math.log10(state.fakeClaims) : 0;
+    const claimsComponent = Math.min(0.4, (claimsLog / 17.5) * 0.4); // 17.5 = log10 of ~31 billion
+    
     return Math.min(1, viewsComponent + claimsComponent);
   };
 
@@ -1453,7 +1463,8 @@ export namespace GameStore {
   ): number => {
     // Base 12% at low evidence, down to 5% at high evidence
     const baseChance = 0.12 - evidenceStrength * 0.07;
-    return Math.min(0.25, baseChance + trialBonus); // Cap at 25%
+    // Cap at 85% - investing in legal defense should pay off!
+    return Math.min(0.85, baseChance + trialBonus);
   };
 
   /**
@@ -1465,7 +1476,8 @@ export namespace GameStore {
   ): number => {
     // Base 5% at low evidence, down to 2% at high evidence
     const baseChance = 0.05 - evidenceStrength * 0.03;
-    return Math.min(0.15, baseChance + trialBonus * 0.5); // Cap at 15%
+    // Cap at 50% - public defender gets half the bonus effectiveness
+    return Math.min(0.50, baseChance + trialBonus * 0.5);
   };
 
   /**

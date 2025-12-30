@@ -523,109 +523,70 @@ export function App() {
         }),
 
       // ============================================
-      // TRIAL & PRESTIGE TESTING
+      // TRIAL TESTING (condensed)
       // ============================================
 
-      // Trigger immediate arrest
-      triggerArrest: () =>
+      // 🎯 50/50 TRIAL - Quick test for balanced acquittal
+      // Low evidence (~25%) + 40% trial bonus = ~50% acquittal with expensive lawyer
+      trial5050: () =>
         w.injectState({
-          viralViews: 100000001,
+          viralViews: 100_000_001, // Just over arrest threshold
           isGameOver: true,
-          isArrested: true,
-          money: 50000000,
-          totalEarned: 500000000,
-          fakeClaims: 2000,
-        }),
-
-      // With trial bonuses (max acquittal chance)
-      maxTrialBonus: () =>
-        w.injectState({
-          money: 500000000,
-          totalEarned: 3000000000,
-          viralViews: 99000000,
-          unlockedZones: [
-            "daycare",
-            "food-program",
-            "housing",
-            "autism",
-            "medicaid",
-            "refugee-services",
-            "political",
-            "nonprofit-empire",
-            "endgame",
-            "shadow-banking",
-          ],
+          money: 10_000_000, // Enough for lawyer
+          totalEarned: 100_000_000,
+          fakeClaims: 100, // Low claims = low evidence
           ownedUpgrades: {
-            "offshore-lawyer-retainer": 1,
-            "crisis-management-team": 1,
-            "double-life": 1,
-            "evidence-tampering": 1,
+            "offshore-lawyer-retainer": 1, // +15%
+            "crisis-management-team": 1,   // +10%
+            "double-life": 1,              // +20%
+            // Total: 45% trial bonus → ~50% acquittal
           },
+          unlockedZones: ["daycare", "political", "nonprofit-empire", "shadow-banking"],
         }),
 
-      // Prestige level 1: first arrest completed
-      prestige1: () =>
+      // Trigger arrest with NO defense (should almost always lose)
+      trialHopeless: () =>
         w.injectState({
-          money: 0,
-          totalEarned: 0,
-          fakeClaims: 0,
-          viralViews: 0,
-          activeZone: "daycare",
-          unlockedZones: ["daycare"],
+          viralViews: 100_000_001,
+          isGameOver: true,
+          money: 100_000, // Can barely afford public defender
+          totalEarned: 500_000_000,
+          fakeClaims: 50_000, // High claims
           ownedUpgrades: {},
-          totalArrestCount: 1,
-          isGameOver: false,
-          isVictory: false,
-          lifetimeStats: {
-            totalMoneyEarned: 100000000,
-            totalClaimsFiled: 1000,
-            totalGoldenClaimsCaught: 5,
-            highestViralViews: 100000000,
-            fastestWinTime: null,
-            timesArrested: 1,
-          },
-        }),
-
-      // Prestige level 3: veteran player
-      prestige3: () =>
-        w.injectState({
-          money: 10000,
-          totalEarned: 10000,
-          fakeClaims: 50,
-          viralViews: 20000,
-          activeZone: "daycare",
           unlockedZones: ["daycare"],
-          ownedUpgrades: { "empty-building": 5 },
-          totalArrestCount: 3,
-          lifetimeStats: {
-            totalMoneyEarned: 500000000,
-            totalClaimsFiled: 5000,
-            totalGoldenClaimsCaught: 25,
-            highestViralViews: 100000000,
-            fastestWinTime: null,
-            timesArrested: 3,
-          },
         }),
 
-      // Prestige level 5: career criminal
+      // Trigger arrest with MAX defense (should almost always win)
+      trialEasyWin: () =>
+        w.injectState({
+          viralViews: 100_000_001,
+          isGameOver: true,
+          money: 500_000_000,
+          totalEarned: 1_000_000_000,
+          fakeClaims: 50, // Very low claims
+          ownedUpgrades: {
+            "offshore-lawyer-retainer": 1, // +15%
+            "crisis-management-team": 1,   // +10%
+            "double-life": 1,              // +20%
+            "evidence-tampering": 1,       // +25%
+            // Total: 70% bonus → ~75% acquittal
+          },
+          hiredCrew: ["expensive-lawyer", "federal-judge"], // +5% + 15% = +20% more
+          unlockedZones: ["daycare", "political", "nonprofit-empire", "endgame", "shadow-banking"],
+        }),
+
+      // Prestige test (career criminal with bonuses)
       prestige5: () =>
         w.injectState({
-          money: 50000,
-          totalEarned: 50000,
-          fakeClaims: 100,
-          viralViews: 30000,
+          money: 50_000,
+          totalEarned: 50_000,
+          viralViews: 30_000,
           activeZone: "daycare",
           unlockedZones: ["daycare"],
-          ownedUpgrades: { "empty-building": 10, "misspelled-sign": 8 },
+          ownedUpgrades: { "empty-building": 10 },
           totalArrestCount: 5,
-          lifetimeStats: {
-            totalMoneyEarned: 2000000000,
-            totalClaimsFiled: 15000,
-            totalGoldenClaimsCaught: 50,
-            highestViralViews: 100000000,
-            fastestWinTime: 900000, // 15 min
-            timesArrested: 5,
-          },
+          isGameOver: false,
+          isVictory: false,
         }),
 
       // ============================================
@@ -1120,7 +1081,7 @@ export function App() {
         "  VIEW CAPS: immunityDeal, dojContact, totalImmunity, diplomaticImmunity"
       );
       console.log(
-        "  TRIAL: triggerArrest, maxTrialBonus, prestige1, prestige3, prestige5"
+        "  🎯 TRIAL: trial5050, trialHopeless, trialEasyWin, prestige5"
       );
       console.log("  VICTORY: nearVictory, triggerVictory, postVictory");
       console.log(
