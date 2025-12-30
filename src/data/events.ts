@@ -5,6 +5,12 @@ export type PoliticalEvent = {
   effect: PoliticalEvent.Effect;
   duration: number; // seconds
   icon: string;
+  /** Event tier (1-4): controls when event can trigger based on progress
+   * - Tier 1: Early game ($0-$600K) - local events, small impacts
+   * - Tier 2: Mid game ($600K-$35M) - regional, growing scrutiny
+   * - Tier 3: Late game ($35M-$200M) - national, major investigations
+   * - Tier 4: Endgame ($200M+) - viral phenomena, congress */
+  tier: 1 | 2 | 3 | 4;
   /** Character ID to display portrait (e.g., "nick-shirley", "tim-walz") */
   character?: string;
   /** AI-generated image path (optional) */
@@ -36,6 +42,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.7 },
     duration: 90,
     icon: "🎤",
+    tier: 2,
     character: "tim-walz",
   },
   {
@@ -45,6 +52,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.4 },
     duration: 120,
     icon: "🗳️",
+    tier: 3,
   },
   {
     id: "news-cycle-moves-on",
@@ -53,6 +61,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.5 },
     duration: 90,
     icon: "📺",
+    tier: 2,
   },
   {
     id: "immunity-negotiations",
@@ -61,6 +70,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.6 },
     duration: 120,
     icon: "🤝",
+    tier: 3,
   },
   {
     id: "bipartisan-concern",
@@ -69,6 +79,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "nothing" },
     duration: 60,
     icon: "🤝",
+    tier: 2,
   },
   {
     id: "somali-diaspora-protest",
@@ -77,6 +88,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.8 },
     duration: 75,
     icon: "✊",
+    tier: 2,
   },
   {
     id: "holiday-weekend",
@@ -85,6 +97,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.5 },
     duration: 100,
     icon: "🎆",
+    tier: 1,
   },
   {
     id: "government-shutdown",
@@ -93,6 +106,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.3 },
     duration: 90,
     icon: "🏛️",
+    tier: 3,
   },
   {
     id: "budget-crisis",
@@ -101,6 +115,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.6 },
     duration: 80,
     icon: "💸",
+    tier: 2,
   },
   {
     id: "staff-turnover",
@@ -109,6 +124,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.5 },
     duration: 100,
     icon: "🚪",
+    tier: 1,
   },
   {
     id: "new-commissioner",
@@ -117,6 +133,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.4 },
     duration: 120,
     icon: "👔",
+    tier: 2,
   },
   {
     id: "database-outage",
@@ -125,6 +142,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.6 },
     duration: 60,
     icon: "💻",
+    tier: 1,
   },
   {
     id: "winter-storm",
@@ -133,6 +151,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.5 },
     duration: 75,
     icon: "❄️",
+    tier: 1,
   },
   {
     id: "super-bowl-week",
@@ -141,6 +160,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.4 },
     duration: 90,
     icon: "🏈",
+    tier: 2,
   },
 
   // ============================================
@@ -153,6 +173,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 500_000 },
     duration: 30,
     icon: "🐦",
+    tier: 3,
   },
   {
     id: "noem-strike-team",
@@ -161,6 +182,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 1.4 },
     duration: 60,
     icon: "🎯",
+    tier: 4,
     character: "dhs-official",
   },
   {
@@ -170,6 +192,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 1.25 },
     duration: 60,
     icon: "🔍",
+    tier: 3,
     character: "fbi-agent",
   },
   {
@@ -179,6 +202,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 200_000 },
     duration: 45,
     icon: "📊",
+    tier: 2,
   },
   {
     id: "whistleblower",
@@ -187,6 +211,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 400_000 },
     duration: 45,
     icon: "🔔",
+    tier: 2,
   },
   {
     id: "doj-investigation",
@@ -195,6 +220,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 1.5 },
     duration: 60,
     icon: "⚖️",
+    tier: 3,
     character: "federal-judge",
   },
   {
@@ -204,6 +230,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 750_000 },
     duration: 30,
     icon: "🚔",
+    tier: 3,
     character: "fbi-agent",
   },
   {
@@ -213,6 +240,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 500_000 },
     duration: 45,
     icon: "🗳️",
+    tier: 3,
   },
   {
     id: "wire-transfer-flagged",
@@ -221,6 +249,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 400_000 },
     duration: 45,
     icon: "💸",
+    tier: 2,
   },
   {
     id: "grand-jury-empaneled",
@@ -229,6 +258,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 1.75 },
     duration: 60,
     icon: "📜",
+    tier: 4,
     character: "federal-judge",
   },
   {
@@ -238,6 +268,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_500_000 },
     duration: 30,
     icon: "📹",
+    tier: 3,
     character: "nick-shirley",
   },
   {
@@ -247,6 +278,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 2_500_000 },
     duration: 45,
     icon: "📺",
+    tier: 4,
   },
   {
     id: "netflix-documentary",
@@ -255,6 +287,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 3_000_000 },
     duration: 60,
     icon: "🎬",
+    tier: 4,
   },
   {
     id: "podcast-viral",
@@ -263,6 +296,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 800_000 },
     duration: 40,
     icon: "🎙️",
+    tier: 3,
   },
   {
     id: "trump-rally-mention",
@@ -271,6 +305,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 2_000_000 },
     duration: 30,
     icon: "🎪",
+    tier: 4,
   },
   {
     id: "elon-tweet",
@@ -279,6 +314,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 4_000_000 },
     duration: 25,
     icon: "🚀",
+    tier: 4,
   },
   {
     id: "cooperating-witness",
@@ -287,6 +323,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 1.6 },
     duration: 50,
     icon: "🐀",
+    tier: 3,
   },
   {
     id: "witness-accident",
@@ -295,6 +332,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.5 },
     duration: 90,
     icon: "💀",
+    tier: 3,
   },
   {
     id: "juror-intimidation",
@@ -303,6 +341,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_000_000 },
     duration: 40,
     icon: "😨",
+    tier: 4,
   },
   {
     id: "informant-disappears",
@@ -311,6 +350,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.6 },
     duration: 80,
     icon: "👻",
+    tier: 3,
   },
   {
     id: "prosecutor-threatened",
@@ -319,6 +359,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 900_000 },
     duration: 45,
     icon: "⚠️",
+    tier: 3,
   },
   {
     id: "witness-protection",
@@ -327,6 +368,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 1.3 },
     duration: 60,
     icon: "🛡️",
+    tier: 3,
   },
   {
     id: "auditor-car-trouble",
@@ -335,6 +377,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.4 },
     duration: 100,
     icon: "🚗",
+    tier: 3,
   },
   {
     id: "journalist-harassed",
@@ -343,6 +386,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_200_000 },
     duration: 35,
     icon: "📰",
+    tier: 3,
   },
   {
     id: "hit-and-run",
@@ -351,6 +395,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.45 },
     duration: 85,
     icon: "🚙",
+    tier: 3,
   },
   {
     id: "suicide-note-found",
@@ -359,6 +404,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.35 },
     duration: 120,
     icon: "📝",
+    tier: 4,
   },
   {
     id: "asset-seizure",
@@ -367,6 +413,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 600_000 },
     duration: 40,
     icon: "🔒",
+    tier: 3,
   },
   {
     id: "indictment-unsealed",
@@ -375,6 +422,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_000_000 },
     duration: 35,
     icon: "📋",
+    tier: 3,
   },
   {
     id: "tiktok-trend",
@@ -383,6 +431,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_800_000 },
     duration: 30,
     icon: "📱",
+    tier: 3,
   },
 
   // ============================================
@@ -395,6 +444,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "investigation", incomeMultiplier: 0.3, viewGain: 500_000 },
     duration: 30,
     icon: "🏛️",
+    tier: 4,
   },
   {
     id: "senate-hearing",
@@ -403,6 +453,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "investigation", incomeMultiplier: 0.3, viewGain: 600_000 },
     duration: 35,
     icon: "🏛️",
+    tier: 4,
   },
   {
     id: "embassy-alert",
@@ -415,6 +466,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     },
     duration: 25,
     icon: "🚨",
+    tier: 3,
   },
   {
     id: "irs-audit",
@@ -423,6 +475,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "investigation", incomeMultiplier: 0.3, viewGain: 500_000 },
     duration: 30,
     icon: "📋",
+    tier: 2,
   },
   {
     id: "surprise-inspection",
@@ -431,6 +484,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "investigation", incomeMultiplier: 0.2, viewGain: 300_000 },
     duration: 20,
     icon: "🔍",
+    tier: 1,
     character: "corrupt-inspector",
   },
   {
@@ -444,6 +498,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     },
     duration: 25,
     icon: "🏦",
+    tier: 3,
   },
 
   // ============================================
@@ -456,6 +511,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 0.7 },
     duration: 60,
     icon: "🎪",
+    tier: 2,
   },
   {
     id: "covid-relief-funds",
@@ -464,6 +520,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.5 },
     duration: 90,
     icon: "💰",
+    tier: 1,
   },
   {
     id: "end-of-fiscal-year",
@@ -472,6 +529,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.3 },
     duration: 75,
     icon: "📅",
+    tier: 1,
   },
   {
     id: "stimulus-package",
@@ -480,6 +538,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.4 },
     duration: 80,
     icon: "💵",
+    tier: 2,
   },
   {
     id: "budget-surplus",
@@ -488,6 +547,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.25 },
     duration: 70,
     icon: "📈",
+    tier: 1,
   },
   {
     id: "grant-renewal",
@@ -496,6 +556,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.35 },
     duration: 85,
     icon: "🏛️",
+    tier: 2,
   },
 
   // ============================================
@@ -510,6 +571,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 300_000 },
     duration: 45,
     icon: "📸",
+    tier: 2,
     character: "nick-shirley",
   },
   {
@@ -519,6 +581,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 1.3 },
     duration: 40,
     icon: "🎤",
+    tier: 2,
     character: "nick-shirley",
   },
   {
@@ -528,6 +591,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 2_000_000 },
     duration: 35,
     icon: "🚁",
+    tier: 3,
     character: "nick-shirley",
   },
   {
@@ -537,6 +601,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_200_000 },
     duration: 40,
     icon: "📊",
+    tier: 3,
     character: "nick-shirley",
   },
 
@@ -548,6 +613,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.8 },
     duration: 75,
     icon: "🎭",
+    tier: 3,
     character: "tim-walz",
   },
   {
@@ -557,6 +623,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.6 },
     duration: 100,
     icon: "📋",
+    tier: 2,
     character: "tim-walz",
   },
   {
@@ -566,6 +633,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.75 },
     duration: 80,
     icon: "😷",
+    tier: 2,
     character: "tim-walz",
   },
   {
@@ -575,6 +643,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.65 },
     duration: 90,
     icon: "🤝",
+    tier: 2,
     character: "tim-walz",
   },
 
@@ -590,6 +659,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     },
     duration: 25,
     icon: "📄",
+    tier: 3,
     character: "fbi-agent",
   },
   {
@@ -599,6 +669,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 900_000 },
     duration: 35,
     icon: "🕵️",
+    tier: 3,
     character: "fbi-agent",
   },
   {
@@ -608,6 +679,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 1.35 },
     duration: 55,
     icon: "🏦",
+    tier: 3,
     character: "fbi-agent",
   },
 
@@ -623,6 +695,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     },
     duration: 30,
     icon: "🎖️",
+    tier: 3,
     character: "dhs-official",
   },
   {
@@ -632,6 +705,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 650_000 },
     duration: 40,
     icon: "📝",
+    tier: 3,
     character: "dhs-official",
   },
 
@@ -643,6 +717,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.5 },
     duration: 100,
     icon: "😉",
+    tier: 1,
     character: "corrupt-inspector",
   },
   {
@@ -652,6 +727,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.4 },
     duration: 120,
     icon: "📱",
+    tier: 1,
     character: "corrupt-inspector",
   },
   {
@@ -661,6 +737,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.55 },
     duration: 90,
     icon: "🗑️",
+    tier: 1,
     character: "corrupt-inspector",
   },
 
@@ -672,6 +749,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 500_000 },
     duration: 45,
     icon: "🔨",
+    tier: 3,
     character: "federal-judge",
   },
   {
@@ -681,6 +759,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 800_000 },
     duration: 30,
     icon: "📋",
+    tier: 3,
     character: "federal-judge",
   },
 
@@ -692,6 +771,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.6 },
     duration: 80,
     icon: "💼",
+    tier: 3,
     character: "expensive-lawyer",
   },
   {
@@ -701,6 +781,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.7 },
     duration: 70,
     icon: "⚖️",
+    tier: 3,
     character: "expensive-lawyer",
   },
 
@@ -714,6 +795,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 500_000, percent: 0.02 },
     duration: 60,
     icon: "💉",
+    tier: 2,
   },
   {
     id: "end-of-year-surplus",
@@ -722,6 +804,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 250_000, percent: 0.01 },
     duration: 45,
     icon: "📊",
+    tier: 1,
   },
   {
     id: "retroactive-payments",
@@ -730,6 +813,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 1_000_000, percent: 0.03 },
     duration: 50,
     icon: "🔄",
+    tier: 2,
   },
   {
     id: "mistake-in-your-favor",
@@ -738,6 +822,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 750_000, percent: 0 },
     duration: 40,
     icon: "🎰",
+    tier: 2,
   },
   {
     id: "grant-windfall",
@@ -746,6 +831,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 2_000_000, percent: 0.01 },
     duration: 55,
     icon: "🏗️",
+    tier: 3,
   },
 
   // ============================================
@@ -758,6 +844,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewReduction", amount: 2_000_000 },
     duration: 60,
     icon: "⭐",
+    tier: 3,
   },
   {
     id: "natural-disaster",
@@ -766,6 +853,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewReduction", amount: 3_000_000 },
     duration: 70,
     icon: "🌪️",
+    tier: 3,
   },
   {
     id: "major-sports-event",
@@ -774,6 +862,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewReduction", amount: 1_500_000 },
     duration: 50,
     icon: "🏆",
+    tier: 2,
   },
   {
     id: "viral-cat-video",
@@ -782,6 +871,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewReduction", amount: 800_000 },
     duration: 40,
     icon: "🐱",
+    tier: 2,
   },
   {
     id: "political-distraction",
@@ -790,6 +880,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewReduction", amount: 2_500_000 },
     duration: 65,
     icon: "🏛️",
+    tier: 3,
   },
 
   // ============================================
@@ -802,6 +893,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "combo", incomeMultiplier: 1.25, viewMultiplier: 1.15 },
     duration: 75,
     icon: "📋",
+    tier: 2,
   },
   {
     id: "media-attention",
@@ -810,6 +902,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "combo", incomeMultiplier: 1.4, viewMultiplier: 1.3 },
     duration: 60,
     icon: "📺",
+    tier: 3,
   },
   {
     id: "inspector-vacation",
@@ -818,6 +911,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "combo", incomeMultiplier: 0.9, viewMultiplier: 0.5 },
     duration: 90,
     icon: "🏖️",
+    tier: 1,
   },
   {
     id: "new-regulations",
@@ -826,6 +920,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "combo", incomeMultiplier: 1.35, viewMultiplier: 1.2 },
     duration: 80,
     icon: "📜",
+    tier: 2,
   },
 
   // ============================================
@@ -838,6 +933,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.6 },
     duration: 80,
     icon: "🪧",
+    tier: 1,
     character: "corrupt-inspector",
   },
   {
@@ -847,6 +943,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 500_000 },
     duration: 45,
     icon: "🎓",
+    tier: 2,
   },
   {
     id: "aimee-bock-quote",
@@ -855,6 +952,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.8 },
     duration: 60,
     icon: "🎤",
+    tier: 3,
   },
   {
     id: "dubai-wire-successful",
@@ -863,6 +961,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 500_000, percent: 0.01 },
     duration: 40,
     icon: "🏙️",
+    tier: 2,
   },
   {
     id: "kenya-property-purchased",
@@ -871,6 +970,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 300_000, percent: 0 },
     duration: 35,
     icon: "🏠",
+    tier: 2,
   },
   {
     id: "costco-receipt-accepted",
@@ -879,6 +979,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.3 },
     duration: 70,
     icon: "🧾",
+    tier: 1,
   },
   {
     id: "naptime-verified",
@@ -887,6 +988,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.7 },
     duration: 65,
     icon: "😴",
+    tier: 1,
   },
   {
     id: "therapy-notes-approved",
@@ -895,6 +997,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.2 },
     duration: 55,
     icon: "📝",
+    tier: 2,
   },
   {
     id: "wheelchair-shipment",
@@ -903,6 +1006,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 800_000, percent: 0 },
     duration: 50,
     icon: "🦽",
+    tier: 2,
   },
   {
     id: "pca-timesheet-accepted",
@@ -911,6 +1015,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.15 },
     duration: 60,
     icon: "⏰",
+    tier: 1,
   },
   {
     id: "voter-registration-drive",
@@ -919,6 +1024,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 400_000 },
     duration: 40,
     icon: "🗳️",
+    tier: 2,
   },
   {
     id: "community-protest-support",
@@ -927,6 +1033,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewReduction", amount: 1_000_000 },
     duration: 55,
     icon: "✊",
+    tier: 2,
   },
   {
     id: "records-destroyed",
@@ -935,6 +1042,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewReduction", amount: 1_500_000 },
     duration: 60,
     icon: "💥",
+    tier: 3,
   },
   {
     id: "witness-recants",
@@ -943,6 +1051,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.65 },
     duration: 70,
     icon: "🤷",
+    tier: 3,
   },
 
   // ============================================
@@ -955,6 +1064,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.55 },
     duration: 75,
     icon: "😴",
+    tier: 1,
     character: "corrupt-inspector",
   },
   {
@@ -964,6 +1074,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.4 },
     duration: 90,
     icon: "🍔",
+    tier: 2,
     character: "fbi-agent",
   },
   {
@@ -973,6 +1084,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.4 },
     duration: 60,
     icon: "⏰",
+    tier: 2,
   },
   {
     id: "three-buildings-same-address",
@@ -981,6 +1093,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.35 },
     duration: 55,
     icon: "🚽",
+    tier: 2,
   },
   {
     id: "attendance-exceeds-population",
@@ -989,6 +1102,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 1_500_000, percent: 0.02 },
     duration: 45,
     icon: "📈",
+    tier: 3,
   },
   {
     id: "twins-born-same-day",
@@ -997,6 +1111,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.25 },
     duration: 50,
     icon: "👶",
+    tier: 2,
   },
   {
     id: "state-database-typo",
@@ -1005,6 +1120,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 900_000, percent: 0 },
     duration: 30,
     icon: "💻",
+    tier: 2,
   },
   {
     id: "inspector-needs-glasses",
@@ -1013,6 +1129,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.45 },
     duration: 85,
     icon: "👓",
+    tier: 1,
     character: "corrupt-inspector",
   },
   {
@@ -1022,6 +1139,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewReduction", amount: 1_200_000 },
     duration: 55,
     icon: "🗑️",
+    tier: 2,
   },
 
   // ============================================
@@ -1034,6 +1152,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 5_000_000 },
     duration: 40,
     icon: "📹",
+    tier: 4,
     character: "nick-shirley",
   },
   {
@@ -1043,6 +1162,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 3_500_000 },
     duration: 35,
     icon: "🎙️",
+    tier: 4,
   },
   {
     id: "reddit-ama",
@@ -1051,6 +1171,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_000_000 },
     duration: 45,
     icon: "👽",
+    tier: 3,
   },
   {
     id: "snl-cold-open",
@@ -1059,6 +1180,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 2_500_000 },
     duration: 30,
     icon: "🎭",
+    tier: 4,
   },
   {
     id: "last-week-tonight",
@@ -1067,6 +1189,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 4_000_000 },
     duration: 45,
     icon: "📺",
+    tier: 4,
   },
   {
     id: "true-crime-podcast-series",
@@ -1075,6 +1198,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 2_000_000 },
     duration: 60,
     icon: "🎧",
+    tier: 4,
   },
   {
     id: "twitter-ratio",
@@ -1083,6 +1207,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 800_000 },
     duration: 25,
     icon: "🐦",
+    tier: 3,
     character: "tim-walz",
   },
   {
@@ -1092,6 +1217,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_500_000 },
     duration: 35,
     icon: "🪧",
+    tier: 3,
   },
 
   // ============================================
@@ -1104,6 +1230,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.7 },
     duration: 80,
     icon: "📋",
+    tier: 3,
     character: "tim-walz",
   },
   {
@@ -1113,6 +1240,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "nothing" },
     duration: 60,
     icon: "✉️",
+    tier: 2,
   },
   {
     id: "too-trusting-defense",
@@ -1121,6 +1249,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.75 },
     duration: 70,
     icon: "🤗",
+    tier: 3,
     character: "tim-walz",
   },
   {
@@ -1130,6 +1259,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.8 },
     duration: 50,
     icon: "🎤",
+    tier: 2,
     character: "tim-walz",
   },
   {
@@ -1139,6 +1269,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.5 },
     duration: 100,
     icon: "📅",
+    tier: 3,
   },
   {
     id: "new-director-quits",
@@ -1147,6 +1278,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.55 },
     duration: 85,
     icon: "🚪",
+    tier: 2,
   },
   {
     id: "legislators-shocked",
@@ -1155,6 +1287,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "nothing" },
     duration: 45,
     icon: "😲",
+    tier: 3,
   },
 
   // ============================================
@@ -1167,6 +1300,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 2_000_000, percent: 0.01 },
     duration: 50,
     icon: "🏰",
+    tier: 3,
   },
   {
     id: "mercedes-fleet-delivered",
@@ -1175,6 +1309,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 800_000, percent: 0 },
     duration: 40,
     icon: "🚗",
+    tier: 3,
   },
   {
     id: "rolex-conference",
@@ -1183,6 +1318,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 500_000, percent: 0 },
     duration: 35,
     icon: "⌚",
+    tier: 2,
   },
   {
     id: "hawala-express",
@@ -1191,6 +1327,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "incomeMultiplier", amount: 1.3 },
     duration: 65,
     icon: "💱",
+    tier: 3,
   },
   {
     id: "turkish-beach-retreat",
@@ -1199,6 +1336,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 600_000, percent: 0 },
     duration: 40,
     icon: "🏖️",
+    tier: 2,
   },
   {
     id: "designer-uniforms",
@@ -1207,6 +1345,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "moneyBonus", flat: 400_000, percent: 0 },
     duration: 30,
     icon: "👔",
+    tier: 2,
   },
 
   // ============================================
@@ -1219,6 +1358,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.6 },
     duration: 75,
     icon: "🤔",
+    tier: 3,
   },
   {
     id: "evidence-flood",
@@ -1227,6 +1367,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewReduction", amount: 2_000_000 },
     duration: 65,
     icon: "💧",
+    tier: 3,
   },
   {
     id: "laptop-stolen",
@@ -1235,6 +1376,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.5 },
     duration: 80,
     icon: "💻",
+    tier: 2,
   },
   {
     id: "translation-delays",
@@ -1243,6 +1385,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.55 },
     duration: 100,
     icon: "🗣️",
+    tier: 3,
   },
   {
     id: "jurisdiction-confusion",
@@ -1251,6 +1394,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.65 },
     duration: 70,
     icon: "⚖️",
+    tier: 2,
   },
   {
     id: "printer-jam",
@@ -1259,6 +1403,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewMultiplier", amount: 0.7 },
     duration: 55,
     icon: "🖨️",
+    tier: 2,
   },
 
   // ============================================
@@ -1271,6 +1416,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 6_000_000 },
     duration: 50,
     icon: "💰",
+    tier: 4,
   },
   {
     id: "gao-report-released",
@@ -1279,6 +1425,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 3_000_000 },
     duration: 45,
     icon: "📊",
+    tier: 4,
   },
   {
     id: "fraud-exceeds-budget",
@@ -1287,6 +1434,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 2_500_000 },
     duration: 40,
     icon: "📉",
+    tier: 4,
   },
   {
     id: "largest-in-history",
@@ -1295,6 +1443,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 4_000_000 },
     duration: 35,
     icon: "🏆",
+    tier: 4,
   },
   {
     id: "recovery-update",
@@ -1303,18 +1452,20 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_500_000 },
     duration: 45,
     icon: "🎯",
+    tier: 4,
   },
 
   // ============================================
   // NEW SATIRICAL EVENTS - FEEDING OUR FUTURE
   // ============================================
   {
-    id: "aimee-bock-quote",
+    id: "aimee-bock-quote-2",
     title: "Aimee Bock Interview Resurfaces",
     description: "'I was just feeding the children!' (she wasn't)",
     effect: { type: "viewGain", amount: 900_000 },
     duration: 40,
     icon: "🎤",
+    tier: 3,
   },
   {
     id: "28-year-sentence",
@@ -1323,6 +1474,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 3_000_000 },
     duration: 35,
     icon: "⚖️",
+    tier: 4,
   },
   {
     id: "empty-kitchen-photos",
@@ -1331,6 +1483,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_200_000 },
     duration: 40,
     icon: "🍳",
+    tier: 3,
   },
   {
     id: "bulk-receipt-scandal",
@@ -1339,6 +1492,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 800_000 },
     duration: 35,
     icon: "🧾",
+    tier: 2,
   },
   {
     id: "feeding-site-was-nightclub",
@@ -1347,6 +1501,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_000_000 },
     duration: 40,
     icon: "🎉",
+    tier: 3,
   },
   {
     id: "57-convictions-and-counting",
@@ -1355,6 +1510,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 2_000_000 },
     duration: 45,
     icon: "📋",
+    tier: 4,
   },
 
   // ============================================
@@ -1367,6 +1523,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 500_000 },
     duration: 35,
     icon: "👩‍💻",
+    tier: 2,
   },
   {
     id: "excel-spreadsheet-limit",
@@ -1375,6 +1532,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 700_000 },
     duration: 30,
     icon: "📊",
+    tier: 3,
   },
   {
     id: "blockchain-excuse",
@@ -1383,6 +1541,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 400_000 },
     duration: 25,
     icon: "₿",
+    tier: 2,
   },
   {
     id: "ai-defense",
@@ -1391,6 +1550,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 600_000 },
     duration: 30,
     icon: "🤖",
+    tier: 3,
   },
   {
     id: "google-maps-evidence",
@@ -1399,6 +1559,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 1_100_000 },
     duration: 40,
     icon: "🛰️",
+    tier: 3,
     character: "nick-shirley",
   },
   {
@@ -1408,6 +1569,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 500_000 },
     duration: 35,
     icon: "⭐",
+    tier: 2,
   },
   {
     id: "neighbors-interview",
@@ -1416,9 +1578,63 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     effect: { type: "viewGain", amount: 900_000 },
     duration: 40,
     icon: "🏠",
+    tier: 2,
     character: "nick-shirley",
   },
 ];
 
+// Tier thresholds based on total earned (matching zone unlock costs)
+// Tier 1: $0 - $600K (early game - daycare, food-program, housing zones)
+// Tier 2: $600K - $35M (mid game - autism, medicaid, refugee-services zones)
+// Tier 3: $35M - $200M (late game - political, nonprofit-empire zones)
+// Tier 4: $200M+ (endgame - the-network, shadow-banking, state-capture zones)
+const TIER_THRESHOLDS = [0, 600_000, 35_000_000, 200_000_000];
+
+/**
+ * Get the current tier (1-4) based on total money earned
+ */
+export const getPlayerTier = (totalEarned: number): 1 | 2 | 3 | 4 => {
+  if (totalEarned >= TIER_THRESHOLDS[3]) return 4;
+  if (totalEarned >= TIER_THRESHOLDS[2]) return 3;
+  if (totalEarned >= TIER_THRESHOLDS[1]) return 2;
+  return 1;
+};
+
+/**
+ * Get a random event appropriate for the player's current progress
+ * - Events can trigger at their tier or any lower tier (higher progress)
+ * - e.g., Tier 2 event can trigger when player is at Tier 2, 3, or 4
+ * - Tier 4 events only trigger at endgame
+ */
+export const getRandomEventForProgress = (totalEarned: number): PoliticalEvent => {
+  const playerTier = getPlayerTier(totalEarned);
+  
+  // Filter events that can happen at this tier
+  // Event tier must be <= player tier (higher tier = later game)
+  const eligibleEvents = POLITICAL_EVENTS.filter(e => e.tier <= playerTier);
+  
+  // If somehow no events (shouldn't happen), fallback to all
+  if (eligibleEvents.length === 0) {
+    return POLITICAL_EVENTS[Math.floor(Math.random() * POLITICAL_EVENTS.length)];
+  }
+  
+  // Weight towards higher-tier events as player progresses
+  // This makes late-game events more common when you're in late game
+  const weightedEvents: PoliticalEvent[] = [];
+  for (const event of eligibleEvents) {
+    // Events at player's current tier get 3x weight
+    // Events one tier below get 2x weight  
+    // Events two+ tiers below get 1x weight
+    const tierDiff = playerTier - event.tier;
+    const weight = tierDiff === 0 ? 3 : tierDiff === 1 ? 2 : 1;
+    for (let i = 0; i < weight; i++) {
+      weightedEvents.push(event);
+    }
+  }
+  
+  return weightedEvents[Math.floor(Math.random() * weightedEvents.length)];
+};
+
+/** @deprecated Use getRandomEventForProgress instead for proper scaling */
 export const getRandomEvent = (): PoliticalEvent =>
   POLITICAL_EVENTS[Math.floor(Math.random() * POLITICAL_EVENTS.length)];

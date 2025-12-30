@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import { UPGRADES, type Upgrade } from "~/data/upgrades";
 import { ZONES, type Zone } from "~/data/zones";
 import { CREW_MEMBERS } from "~/data/crew";
-import { type PoliticalEvent, getRandomEvent } from "~/data/events";
+import { type PoliticalEvent, getRandomEventForProgress } from "~/data/events";
 import { ACHIEVEMENTS } from "~/data/achievements";
 
 // Define nested types first
@@ -409,7 +409,7 @@ export const useGameStore = create<GameStore>()(
           let eventViewReduction = 0;
           let eventMoneyBonus = 0;
           if (!activeEvent && Math.random() < 0.0008) {
-            const newEvent = getRandomEvent();
+            const newEvent = getRandomEventForProgress(s.totalEarned);
             activeEvent = newEvent;
             eventEndTime = now + newEvent.duration * 1000;
             // Apply immediate viewGain effect (scales up with progress - bigger target)
@@ -1075,6 +1075,9 @@ export namespace GameStore {
         multiplier *= 1 - crew.effect.percent;
       }
     });
+
+    // Cap reduction at 95% - always get at least 5% of base views per click
+    multiplier = Math.max(multiplier, 0.05);
 
     return Math.floor(base * multiplier);
   };

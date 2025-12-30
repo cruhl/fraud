@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGameStore } from "~/store/gameStore";
 import { getCharacterImageUrl } from "~/lib/assets";
 import { playSound } from "~/hooks/useAudio";
@@ -183,10 +183,12 @@ export function NickWarning() {
   const hasSeenNickWarning = useGameStore((s) => s.hasSeenNickWarning);
   const dismissNickWarning = useGameStore((s) => s.dismissNickWarning);
   const [isVisible, setIsVisible] = useState(false);
+  const hasFiredRef = useRef(false);
 
-  // Trigger when views first hit 1M
+  // Trigger when views first hit 1M (only fire once)
   useEffect(() => {
-    if (viralViews >= 1_000_000 && !hasSeenNickWarning) {
+    if (viralViews >= 1_000_000 && !hasSeenNickWarning && !hasFiredRef.current) {
+      hasFiredRef.current = true;
       setIsVisible(true);
       playSound("event");
     }
