@@ -1,12 +1,35 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useGameStore, GameStore } from "~/store/gameStore";
 
 export function StatsModal({ inMenu = false }: StatsModal.Props) {
   const lifetimeStats = useGameStore((s) => s.lifetimeStats);
   const totalArrestCount = useGameStore((s) => s.totalArrestCount);
   const unlockedAchievements = useGameStore((s) => s.unlockedAchievements);
+  const ownedUpgrades = useGameStore((s) => s.ownedUpgrades);
+  const unlockedZones = useGameStore((s) => s.unlockedZones);
+  const hiredCrew = useGameStore((s) => s.hiredCrew);
   const [isOpen, setIsOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+
+  // Calculate current bonuses
+  const currentBonuses = useMemo(() => {
+    const pseudoState = {
+      ownedUpgrades,
+      unlockedZones,
+      totalArrestCount,
+      lifetimeStats,
+      hiredCrew,
+    } as Parameters<typeof GameStore.getViewDecay>[0];
+
+    return {
+      viewDecay: GameStore.getViewDecay(pseudoState),
+      viewReduction: GameStore.getViewReductionPercent(pseudoState),
+      clickMultiplier: GameStore.getClickMultiplier(pseudoState),
+      goldenClaimMultiplier: GameStore.getGoldenClaimMultiplier(pseudoState),
+      trialBonus: GameStore.getTrialAcquittalBonus(pseudoState),
+      totalUpgrades: Object.values(ownedUpgrades).reduce((sum, n) => sum + n, 0),
+    };
+  }, [ownedUpgrades, unlockedZones, totalArrestCount, lifetimeStats, hiredCrew]);
 
   const handleHardReset = useCallback(() => {
     if (confirmReset) {
@@ -179,8 +202,110 @@ export function StatsModal({ inMenu = false }: StatsModal.Props) {
               ))}
             </div>
 
+            {/* Current Bonuses Section */}
+            <div className="px-4 md:px-6">
+              <div
+                className="text-[10px] uppercase tracking-wider mb-2"
+                style={{ color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}
+              >
+                Active Bonuses
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div
+                  className="p-2 rounded-lg text-center"
+                  style={{
+                    background: "var(--color-bg-primary)",
+                    border: "1px solid var(--color-border-card)",
+                  }}
+                >
+                  <div className="text-[10px]" style={{ color: "var(--color-text-dim)" }}>View Decay</div>
+                  <div
+                    className="text-sm font-bold"
+                    style={{ fontFamily: "var(--font-mono)", color: "#4ade80" }}
+                  >
+                    -{GameStore.formatViews(currentBonuses.viewDecay)}/s
+                  </div>
+                </div>
+                <div
+                  className="p-2 rounded-lg text-center"
+                  style={{
+                    background: "var(--color-bg-primary)",
+                    border: "1px solid var(--color-border-card)",
+                  }}
+                >
+                  <div className="text-[10px]" style={{ color: "var(--color-text-dim)" }}>View Reduction</div>
+                  <div
+                    className="text-sm font-bold"
+                    style={{ fontFamily: "var(--font-mono)", color: "#4ade80" }}
+                  >
+                    -{Math.round(currentBonuses.viewReduction * 100)}%
+                  </div>
+                </div>
+                <div
+                  className="p-2 rounded-lg text-center"
+                  style={{
+                    background: "var(--color-bg-primary)",
+                    border: "1px solid var(--color-border-card)",
+                  }}
+                >
+                  <div className="text-[10px]" style={{ color: "var(--color-text-dim)" }}>Click Bonus</div>
+                  <div
+                    className="text-sm font-bold"
+                    style={{ fontFamily: "var(--font-mono)", color: "var(--color-money)" }}
+                  >
+                    {currentBonuses.clickMultiplier.toFixed(2)}x
+                  </div>
+                </div>
+                <div
+                  className="p-2 rounded-lg text-center"
+                  style={{
+                    background: "var(--color-bg-primary)",
+                    border: "1px solid var(--color-border-card)",
+                  }}
+                >
+                  <div className="text-[10px]" style={{ color: "var(--color-text-dim)" }}>Trial Defense</div>
+                  <div
+                    className="text-sm font-bold"
+                    style={{ fontFamily: "var(--font-mono)", color: "#4ade80" }}
+                  >
+                    +{Math.round(currentBonuses.trialBonus * 100)}%
+                  </div>
+                </div>
+                <div
+                  className="p-2 rounded-lg text-center"
+                  style={{
+                    background: "var(--color-bg-primary)",
+                    border: "1px solid var(--color-border-card)",
+                  }}
+                >
+                  <div className="text-[10px]" style={{ color: "var(--color-text-dim)" }}>Golden Claims</div>
+                  <div
+                    className="text-sm font-bold"
+                    style={{ fontFamily: "var(--font-mono)", color: "#fbbf24" }}
+                  >
+                    {currentBonuses.goldenClaimMultiplier.toFixed(1)}x
+                  </div>
+                </div>
+                <div
+                  className="p-2 rounded-lg text-center"
+                  style={{
+                    background: "var(--color-bg-primary)",
+                    border: "1px solid var(--color-border-card)",
+                  }}
+                >
+                  <div className="text-[10px]" style={{ color: "var(--color-text-dim)" }}>Upgrades</div>
+                  <div
+                    className="text-sm font-bold"
+                    style={{ fontFamily: "var(--font-mono)", color: "var(--color-text-primary)" }}
+                  >
+                    {currentBonuses.totalUpgrades}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Prestige bonus info */}
-            <div className="px-4 md:px-6 pb-4">
+            <div className="px-4 md:px-6 py-4">
               <div
                 className="text-center p-3 md:p-4 rounded-lg"
                 style={{

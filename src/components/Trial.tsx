@@ -52,7 +52,8 @@ export function Trial() {
     }
   }, [isGameOver, isVictory, totalEarned, money, unlockTrialAchievement]);
 
-  if (!isGameOver || isVictory) return null;
+  // Trial shows whenever player is caught (100M views), even after victory
+  if (!isGameOver) return null;
 
   // Get trial bonus from upgrades
   const state = useGameStore.getState();

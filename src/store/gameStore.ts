@@ -398,6 +398,10 @@ export const useGameStore = create<GameStore>()(
           let nickFilmingProgress = s.nickFilmingProgress;
           let filmingViewSpike = 0;
 
+          // Dynamic scaling based on progress (prevents late-game snowball)
+          const rewardScale = GameStore.getRewardScale(s);
+          const penaltyScale = GameStore.getPenaltyScale(s);
+
           // Random event trigger (0.08% chance per tick for balanced gameplay)
           let eventViewGain = 0;
           let eventViewReduction = 0;
@@ -406,40 +410,45 @@ export const useGameStore = create<GameStore>()(
             const newEvent = getRandomEvent();
             activeEvent = newEvent;
             eventEndTime = now + newEvent.duration * 1000;
-            // Apply immediate viewGain effect
+            // Apply immediate viewGain effect (scales up with progress - bigger target)
             if (newEvent.effect.type === "viewGain") {
-              eventViewGain = newEvent.effect.amount;
+              eventViewGain = newEvent.effect.amount * penaltyScale;
             }
-            // Investigation effect: immediate view spike
+            // Investigation effect: immediate view spike (scales up with progress)
             if (newEvent.effect.type === "investigation") {
-              eventViewGain = newEvent.effect.viewGain;
+              eventViewGain = newEvent.effect.viewGain * penaltyScale;
             }
             // View reduction effect: immediate view decrease
             if (newEvent.effect.type === "viewReduction") {
               eventViewReduction = newEvent.effect.amount;
             }
-            // Money bonus effect: immediate money gain
+            // Money bonus effect: immediate money gain (scales down with progress)
             if (newEvent.effect.type === "moneyBonus") {
-              eventMoneyBonus = newEvent.effect.flat + (s.totalEarned * newEvent.effect.percent);
+              const scaledFlat = newEvent.effect.flat * rewardScale;
+              const scaledPercent = newEvent.effect.percent * rewardScale;
+              eventMoneyBonus = scaledFlat + (s.totalEarned * scaledPercent);
             }
           }
 
-          // Event modifiers
+          // Event modifiers (income bonuses scale down with progress)
           let viewMultiplier = 1;
           let incomeMultiplier = 1;
           if (activeEvent?.effect.type === "viewMultiplier") {
             viewMultiplier = activeEvent.effect.amount;
           }
           if (activeEvent?.effect.type === "incomeMultiplier") {
-            incomeMultiplier = activeEvent.effect.amount;
+            // Scale the bonus portion: 1.5x becomes 1 + (0.5 * rewardScale)
+            const baseBonus = activeEvent.effect.amount - 1;
+            incomeMultiplier = 1 + (baseBonus * rewardScale);
           }
           // Investigation effect: reduced income + view spike already applied
           if (activeEvent?.effect.type === "investigation") {
             incomeMultiplier = activeEvent.effect.incomeMultiplier;
           }
-          // Combo effect: both multipliers
+          // Combo effect: both multipliers (scale income bonus portion)
           if (activeEvent?.effect.type === "combo") {
-            incomeMultiplier = activeEvent.effect.incomeMultiplier;
+            const baseBonus = activeEvent.effect.incomeMultiplier - 1;
+            incomeMultiplier = 1 + (baseBonus * rewardScale);
             viewMultiplier = activeEvent.effect.viewMultiplier;
           }
 
@@ -465,8 +474,9 @@ export const useGameStore = create<GameStore>()(
             nickFilmingProgress = Math.min(100, nickFilmingProgress + 10 * delta);
             
             // When filming completes, trigger segment upload!
+            // View spike scales with progress (bigger target = more viral)
             if (nickFilmingProgress >= 100) {
-              filmingViewSpike = 2_000_000; // +2M views
+              filmingViewSpike = 2_000_000 * penaltyScale; // +2M views (scaled)
               nickFilmingProgress = 0; // Reset for next segment
             }
           } else {
@@ -622,20 +632,26 @@ export const useGameStore = create<GameStore>()(
           let money = s.money;
           let totalEarned = s.totalEarned;
           
+          // Scale rewards/penalties based on progress
+          const rewardScale = GameStore.getRewardScale(s);
+          const penaltyScale = GameStore.getPenaltyScale(s);
+          
           if (event.effect.type === "viewGain") {
-            viralViews += event.effect.amount;
+            viralViews += event.effect.amount * penaltyScale;
           }
-          // Investigation effect: immediate view spike
+          // Investigation effect: immediate view spike (scales with progress)
           if (event.effect.type === "investigation") {
-            viralViews += event.effect.viewGain;
+            viralViews += event.effect.viewGain * penaltyScale;
           }
           // View reduction effect
           if (event.effect.type === "viewReduction") {
             viralViews = Math.max(0, viralViews - event.effect.amount);
           }
-          // Money bonus effect
+          // Money bonus effect (scales down with progress to prevent snowball)
           if (event.effect.type === "moneyBonus") {
-            const bonus = event.effect.flat + (totalEarned * event.effect.percent);
+            const scaledFlat = event.effect.flat * rewardScale;
+            const scaledPercent = event.effect.percent * rewardScale;
+            const bonus = scaledFlat + (totalEarned * scaledPercent);
             money += bonus;
             totalEarned += bonus;
           }
@@ -755,6 +771,7 @@ export const useGameStore = create<GameStore>()(
         set((s) => {
           const claim = s.goldenClaim!;
           const goldenMultiplier = GameStore.getGoldenClaimMultiplier(s);
+          const rewardScale = GameStore.getRewardScale(s);
           let moneyBonus = 0;
           let viewsReduction = 0;
           let discountEndTime = s.discountEndTime;
@@ -762,8 +779,9 @@ export const useGameStore = create<GameStore>()(
           switch (claim.type) {
             case "money":
               // 25x click value + 2% of total earned (min $1000), boosted by multiplier
-              const clickBonus = GameStore.getClickValue(s) * 25;
-              const percentBonus = Math.max(1000, s.totalEarned * 0.02);
+              // Scales down with progress to prevent late-game snowball
+              const clickBonus = GameStore.getClickValue(s) * 25 * rewardScale;
+              const percentBonus = Math.max(1000, s.totalEarned * 0.02) * rewardScale;
               moneyBonus = (clickBonus + percentBonus) * goldenMultiplier;
               break;
             case "views":
@@ -932,6 +950,24 @@ export namespace GameStore {
   export const getZoneExpertiseBonus = (state: GameState): number => {
     return hasZoneExpertise(state) ? ZONE_EXPERTISE_BONUS : 1;
   };
+
+  // ============================================
+  // DYNAMIC SCALING - Balance rewards/penalties with progress
+  // ============================================
+
+  // Progress ratio: 0 at start, 1 at $9B victory threshold
+  export const getProgressRatio = (state: GameState): number =>
+    Math.min(1, state.totalEarned / TARGET_AMOUNT);
+
+  // Rewards scale DOWN as you progress (prevents late-game snowball)
+  // 100% at start → 30% at victory threshold
+  export const getRewardScale = (state: GameState): number =>
+    1 - (getProgressRatio(state) * 0.7);
+
+  // Penalties scale UP as you progress (bigger target = more scrutiny)
+  // 100% at start → 150% at victory threshold
+  export const getPenaltyScale = (state: GameState): number =>
+    1 + (getProgressRatio(state) * 0.5);
 
   // Get the allBonusMultiplier from luxury upgrades
   export const getAllBonusMultiplier = (state: GameState): number => {
@@ -1295,6 +1331,44 @@ export namespace GameStore {
       if (!state.unlockedZones.includes(upgrade.zone)) return;
       if (upgrade.effect.type === "goldenClaimBoost") {
         multiplier *= Math.pow(upgrade.effect.multiplier, owned);
+      }
+    });
+    return multiplier;
+  };
+
+  // Get total view reduction percentage (0-1 where 1 = 100% reduction)
+  export const getViewReductionPercent = (state: GameState): number => {
+    let multiplier = 1;
+    
+    // Reduction from upgrades
+    UPGRADES.forEach((upgrade) => {
+      const owned = state.ownedUpgrades[upgrade.id] ?? 0;
+      if (owned === 0) return;
+      if (upgrade.effect.type === "viewReduction") {
+        multiplier *= Math.pow(1 - upgrade.effect.amount, owned);
+      }
+    });
+    
+    // Crew member view reduction
+    state.hiredCrew?.forEach((crewId) => {
+      const crew = CREW_MEMBERS.find((c) => c.id === crewId);
+      if (crew?.effect.type === "viewGainReduction") {
+        multiplier *= 1 - crew.effect.percent;
+      }
+    });
+    
+    return 1 - multiplier; // Convert to reduction percentage
+  };
+
+  // Get total click multiplier
+  export const getClickMultiplier = (state: GameState): number => {
+    let multiplier = 1;
+    UPGRADES.forEach((upgrade) => {
+      const owned = state.ownedUpgrades[upgrade.id] ?? 0;
+      if (owned === 0) return;
+      if (!state.unlockedZones.includes(upgrade.zone)) return;
+      if (upgrade.effect.type === "clickMultiplier") {
+        multiplier *= Math.pow(upgrade.effect.amount, owned);
       }
     });
     return multiplier;

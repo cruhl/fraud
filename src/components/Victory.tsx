@@ -48,7 +48,10 @@ export function Victory() {
     }
   }, [isVictory]);
 
-  if (!isVictory || victoryDismissed) return null;
+  const isGameOver = useGameStore((s) => s.isGameOver);
+
+  // Don't show victory screen if player is arrested (trial takes precedence)
+  if (!isVictory || victoryDismissed || isGameOver) return null;
 
   return (
     <div 

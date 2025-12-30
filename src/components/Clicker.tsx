@@ -59,7 +59,7 @@ export function Clicker() {
   }, []);
 
   const handleClick = useCallback(() => {
-    if (isGameOver || isVictory || isPaused) return;
+    if (isGameOver || (isVictory && !victoryDismissed) || isPaused) return;
 
     click();
     playSound(getClickSound(clickValue));
@@ -155,7 +155,7 @@ export function Clicker() {
     setTimeout(() => {
       setParticles((prev) => prev.filter((p) => !newParticles.some((np) => np.id === p.id)));
     }, 700);
-  }, [click, clickValue, isGameOver, isVictory, isPaused, activeZone]);
+  }, [click, clickValue, isGameOver, isVictory, victoryDismissed, isPaused, activeZone]);
 
   const getStampContent = () => {
     switch (activeZone) {

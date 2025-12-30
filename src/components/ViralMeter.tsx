@@ -15,6 +15,7 @@ export function ViralMeter() {
   const totalArrestCount = useGameStore((s) => s.totalArrestCount);
   const lifetimeStats = useGameStore((s) => s.lifetimeStats);
   const activeEvent = useGameStore((s) => s.activeEvent);
+  const hiredCrew = useGameStore((s) => s.hiredCrew);
 
   const [showModifiers, setShowModifiers] = useState(false);
 
@@ -27,6 +28,7 @@ export function ViralMeter() {
       lifetimeStats,
       activeEvent,
       nickShirleyLocation,
+      hiredCrew,
     } as Parameters<typeof GameStore.getViewDecay>[0];
 
     const viewDecay = GameStore.getViewDecay(pseudoState);
@@ -36,6 +38,10 @@ export function ViralMeter() {
     const prestigeDecayBonus = totalArrestCount * 5; // Percentage bonus
     const isNickFilming = nickShirleyLocation === activeZone;
     const hasViewCapUpgrade = viewCap < GameStore.VIRAL_LIMIT;
+    const viewReduction = GameStore.getViewReductionPercent(pseudoState);
+    const clickMultiplier = GameStore.getClickMultiplier(pseudoState);
+    const goldenClaimMultiplier = GameStore.getGoldenClaimMultiplier(pseudoState);
+    const trialBonus = GameStore.getTrialAcquittalBonus(pseudoState);
 
     return {
       viewDecay,
@@ -44,8 +50,12 @@ export function ViralMeter() {
       prestigeDecayBonus,
       isNickFilming,
       hasViewCapUpgrade,
+      viewReduction,
+      clickMultiplier,
+      goldenClaimMultiplier,
+      trialBonus,
     };
-  }, [ownedUpgrades, unlockedZones, totalArrestCount, lifetimeStats, activeEvent, nickShirleyLocation, activeZone]);
+  }, [ownedUpgrades, unlockedZones, totalArrestCount, lifetimeStats, activeEvent, nickShirleyLocation, activeZone, hiredCrew]);
 
   // Use logarithmic scale so progress matches threat level perception
   // Thresholds: 10K, 100K, 1M, 10M, 50M, 95M, 100M
@@ -445,12 +455,76 @@ export function ViralMeter() {
               </div>
             )}
 
+            {/* View Reduction (only show if player has reduction upgrades) */}
+            {modifiers.viewReduction > 0.01 && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  🛡️ View Reduction
+                </span>
+                <span
+                  className="text-xs font-semibold"
+                  style={{ fontFamily: "var(--font-mono)", color: "#4ade80" }}
+                >
+                  -{Math.round(modifiers.viewReduction * 100)}% per click
+                </span>
+              </div>
+            )}
+
+            {/* Click Multiplier (only show if > 1) */}
+            {modifiers.clickMultiplier > 1.01 && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  💰 Click Multiplier
+                </span>
+                <span
+                  className="text-xs font-semibold"
+                  style={{ fontFamily: "var(--font-mono)", color: "var(--color-money)" }}
+                >
+                  {modifiers.clickMultiplier.toFixed(2)}x
+                </span>
+              </div>
+            )}
+
+            {/* Golden Claim Multiplier (only show if > 1) */}
+            {modifiers.goldenClaimMultiplier > 1 && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  ✨ Golden Claims
+                </span>
+                <span
+                  className="text-xs font-semibold"
+                  style={{ fontFamily: "var(--font-mono)", color: "#fbbf24" }}
+                >
+                  {modifiers.goldenClaimMultiplier.toFixed(1)}x rewards
+                </span>
+              </div>
+            )}
+
+            {/* Trial Acquittal Bonus (only show if > 0) */}
+            {modifiers.trialBonus > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  ⚖️ Legal Defense
+                </span>
+                <span
+                  className="text-xs font-semibold"
+                  style={{ fontFamily: "var(--font-mono)", color: "#4ade80" }}
+                >
+                  +{Math.round(modifiers.trialBonus * 100)}% acquittal
+                </span>
+              </div>
+            )}
+
             {/* Empty state */}
-            {modifiers.viewDecay <= 500 && 
+            {modifiers.viewDecay <= 1000 && 
              !modifiers.hasViewCapUpgrade && 
              modifiers.passiveViews === 0 && 
              modifiers.prestigeDecayBonus === 0 && 
-             !modifiers.isNickFilming && (
+             !modifiers.isNickFilming &&
+             modifiers.viewReduction <= 0.01 &&
+             modifiers.clickMultiplier <= 1.01 &&
+             modifiers.goldenClaimMultiplier <= 1 &&
+             modifiers.trialBonus <= 0 && (
               <div 
                 className="text-xs text-center py-2"
                 style={{ color: "var(--color-text-dim)" }}
