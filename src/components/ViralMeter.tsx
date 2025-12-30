@@ -208,15 +208,22 @@ export function ViralMeter() {
             ))}
           </div>
 
-          {/* Gauge fill */}
+          {/* Gauge fill - clips the full gradient */}
           <div
-            className="h-full transition-all duration-300 relative"
+            className="h-full transition-all duration-300 relative overflow-hidden"
             style={{ 
               width: `${Math.min(100, progress)}%`,
-              background: `linear-gradient(90deg, #22c55e 0%, #facc15 30%, #f97316 60%, ${threat.color} 100%)`,
               boxShadow: isHighThreat ? `0 0 15px ${threat.color}` : undefined,
             }}
           >
+            {/* Full-width gradient that gets revealed by parent clip */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                width: `${100 / Math.max(progress, 1) * 100}%`,
+                background: "linear-gradient(90deg, #4ade80 0%, #facc15 30%, #fb923c 50%, #f97316 65%, #ef4444 80%, #dc2626 90%, #b91c1c 100%)",
+              }}
+            />
             {/* Inner gloss effect */}
             <div 
               className="absolute inset-0"
