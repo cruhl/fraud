@@ -2,6 +2,27 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { useGameStore, type ThreatLevel } from "~/store/gameStore";
 import { HEADLINES, type Headline } from "~/data/headlines";
 import { ZONES } from "~/data/zones";
+import { getCharacterImageUrl } from "~/lib/assets";
+
+// Character portrait URLs for headline categories
+const CHARACTER_PORTRAITS: Record<string, string> = {
+  "nick-shirley": getCharacterImageUrl("nick-shirley"),
+  "federal": getCharacterImageUrl("fbi-agent"),
+  "political": getCharacterImageUrl("tim-walz"),
+  "legal": getCharacterImageUrl("federal-judge"),
+  "state-response": getCharacterImageUrl("corrupt-inspector"),
+  "corruption": getCharacterImageUrl("fraud-mastermind"),
+};
+
+// Get character portrait for a headline category
+const getPortraitForCategory = (category: Headline["category"]): string | null => {
+  return CHARACTER_PORTRAITS[category] || null;
+};
+
+type HeadlineWithCategory = {
+  text: string;
+  category: Headline["category"];
+};
 
 // Map zones to relevant headline categories (zone-specific first, then thematic)
 const ZONE_TO_CATEGORIES: Record<string, Headline["category"][]> = {
@@ -48,7 +69,7 @@ const generateHeadlines = (
   nickShirleyLocation: string | null,
   activeEvent: { effect: { type: string } } | null,
   seed: number
-): string[] => {
+): HeadlineWithCategory[] => {
   const prioritized: Headline[] = [];
   const used = new Set<string>();
 
@@ -131,7 +152,7 @@ const generateHeadlines = (
     }
   }
 
-  return prioritized.map((h) => h.text);
+  return prioritized.map((h) => ({ text: h.text, category: h.category }));
 };
 
 export function NewsTicker() {
@@ -141,7 +162,7 @@ export function NewsTicker() {
   const activeEvent = useGameStore((s) => s.activeEvent);
 
   // Store the stable headline list - only updates on full loop completion
-  const [stableHeadlines, setStableHeadlines] = useState<string[]>(() =>
+  const [stableHeadlines, setStableHeadlines] = useState<HeadlineWithCategory[]>(() =>
     generateHeadlines(
       activeZone,
       threatLevel,
@@ -152,7 +173,7 @@ export function NewsTicker() {
   );
 
   // Track pending headlines that will be swapped in on next loop
-  const pendingHeadlinesRef = useRef<string[] | null>(null);
+  const pendingHeadlinesRef = useRef<HeadlineWithCategory[] | null>(null);
   const animationRef = useRef<HTMLDivElement>(null);
 
   // Generate new headlines when state changes, but don't apply immediately
@@ -192,7 +213,7 @@ export function NewsTicker() {
   const doubledHeadlines = [...stableHeadlines, ...stableHeadlines];
 
   // Calculate animation duration based on content length
-  const totalLength = stableHeadlines.join("").length;
+  const totalLength = stableHeadlines.map(h => h.text).join("").length;
   const animationDuration = Math.max(40, Math.min(80, totalLength * 0.25));
 
   return (
@@ -251,25 +272,40 @@ export function NewsTicker() {
               animation: `ticker ${animationDuration}s linear infinite`,
             }}
           >
-            {doubledHeadlines.map((headline, i) => (
-              <span key={i} className="inline-flex items-center mx-4 md:mx-6">
-                <span
-                  className="text-xs md:text-sm"
-                  style={{
-                    color: "var(--color-text-primary)",
-                    fontFamily: "var(--font-serif)",
-                  }}
-                >
-                  {headline}
+            {doubledHeadlines.map((headline, i) => {
+              const portrait = getPortraitForCategory(headline.category);
+              return (
+                <span key={i} className="inline-flex items-center mx-4 md:mx-6 align-middle">
+                  {/* Character portrait for relevant categories */}
+                  {portrait && (
+                    <img 
+                      src={portrait}
+                      alt=""
+                      className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover shrink-0 mr-2 hidden sm:inline ai-image-character align-middle"
+                      style={{
+                        border: "1px solid rgba(255,255,255,0.3)",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                      }}
+                    />
+                  )}
+                  <span
+                    className="text-xs md:text-sm align-middle"
+                    style={{
+                      color: "var(--color-text-primary)",
+                      fontFamily: "var(--font-serif)",
+                    }}
+                  >
+                    {headline.text}
+                  </span>
+                  <span
+                    className="mx-4 md:mx-6 text-sm md:text-lg align-middle"
+                    style={{ color: "var(--color-corruption)" }}
+                  >
+                    ◆
+                  </span>
                 </span>
-                <span
-                  className="mx-4 md:mx-6 text-sm md:text-lg"
-                  style={{ color: "var(--color-corruption)" }}
-                >
-                  ◆
-                </span>
-              </span>
-            ))}
+              );
+            })}
           </div>
         </div>
 

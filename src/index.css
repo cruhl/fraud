@@ -433,6 +433,8 @@ body {
   min-height: 100vh;
   font-family: var(--font-serif);
   color: var(--color-text-primary);
+  /* Prevent double-tap zoom on mobile */
+  touch-action: manipulation;
   /* Rich layered background with depth */
   background: 
     /* Subtle vignette */ radial-gradient(
@@ -464,6 +466,16 @@ body {
 /* Ensure buttons have pointer cursor by default */
 button:not(:disabled) {
   cursor: pointer;
+}
+
+/* Prevent double-tap zoom on interactive elements */
+button,
+[role="button"],
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }
 
 /* Subtle scan-line overlay for CRT/surveillance effect */

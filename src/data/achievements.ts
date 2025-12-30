@@ -22,7 +22,8 @@ export namespace Achievement {
     | { type: "prestigeLevel"; level: number }
     | { type: "speedWin"; maxTimeMs: number }
     | { type: "carefulWin"; maxThreatLevel: string }
-    | { type: "prestigeEarned"; amount: number };
+    | { type: "prestigeEarned"; amount: number }
+    | { type: "playTime"; minTimeMs: number };
 }
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -34,14 +35,14 @@ export const ACHIEVEMENTS: Achievement[] = [
     name: "Camera Shy",
     description: "Operate for 5 minutes without Nick Shirley finding you",
     icon: "📷",
-    condition: { type: "fakeClaims", amount: 100 },
+    condition: { type: "playTime", minTimeMs: 5 * 60 * 1000 },
   },
   {
     id: "the-42-minutes",
     name: "The 42 Minutes",
     description: "Survive as long as Nick Shirley's video",
     icon: "⏱️",
-    condition: { type: "fakeClaims", amount: 500 },
+    condition: { type: "playTime", minTimeMs: 42 * 60 * 1000 },
   },
   {
     id: "100-million-views",
@@ -122,18 +123,18 @@ export const ACHIEVEMENTS: Achievement[] = [
     condition: { type: "totalEarned", amount: 50_000_000 },
   },
   {
-    id: "shirley-exposure",
-    name: "Nick Shirley's Discovery",
-    description: "Steal $110M (what he exposed in one day)",
-    icon: "📹",
-    condition: { type: "totalEarned", amount: 110_000_000 },
-  },
-  {
     id: "hundred-million",
     name: "Hundred Millionaire",
     description: "Steal $100,000,000",
     icon: "💎",
     condition: { type: "totalEarned", amount: 100_000_000 },
+  },
+  {
+    id: "shirley-exposure",
+    name: "Nick Shirley's Discovery",
+    description: "Steal $110M (what he exposed in one day)",
+    icon: "📹",
+    condition: { type: "totalEarned", amount: 110_000_000 },
   },
   {
     id: "quarter-billion",

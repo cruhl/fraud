@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 /**
- * Asset Generation Script for Minnesota Fraud Empire
+ * Asset Generation Script for Minnesota Fraud Run
  *
  * Usage:
  *   npx tsx scripts/generate-assets.ts [category]

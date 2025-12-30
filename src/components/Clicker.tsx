@@ -2,6 +2,7 @@ import { useCallback, useState, useRef, useEffect } from "react";
 import { useGameStore, GameStore } from "~/store/gameStore";
 import { ZONES } from "~/data/zones";
 import { playSound, type SoundType } from "~/hooks/useAudio";
+import { getZoneImageUrl } from "~/lib/assets";
 
 // Helper to select click sound based on click value
 const getClickSound = (clickValue: number): SoundType => {
@@ -176,10 +177,47 @@ export function Clicker() {
   };
 
   const stamp = getStampContent();
+  const zoneImageUrl = getZoneImageUrl(activeZone);
 
   return (
-    <div className="relative flex flex-col items-center">
-
+    <div className="relative flex flex-col items-center overflow-visible pt-12 md:pt-14">
+      {/* Zone background image - visible on all sizes */}
+      <div 
+        className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl"
+        style={{ zIndex: -1 }}
+      >
+        <img 
+          src={zoneImageUrl}
+          alt=""
+          className="w-full h-full object-cover ai-image-zone"
+          style={{
+            opacity: 0.15,
+            filter: "blur(2px) saturate(0.7)",
+          }}
+        />
+        {/* Dark overlay to ensure button readability */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: "radial-gradient(circle at center, transparent 20%, rgba(8, 9, 13, 0.9) 70%)",
+          }}
+        />
+      </div>
+      
+      {/* Combo counter - positioned outside main flow to prevent clipping */}
+      {comboCount > 2 && (
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 animate-combo-pop pointer-events-none z-50 whitespace-nowrap"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: comboCount > 10 ? "1.5rem" : "1.25rem",
+            color: comboCount > 10 ? "var(--color-viral-bright)" : "var(--color-corruption)",
+            textShadow: `0 0 20px ${comboCount > 10 ? "var(--color-viral)" : "var(--color-corruption)"}`,
+          }}
+        >
+          {comboCount}x COMBO!
+        </div>
+      )}
 
       {/* Ink splatters - zone colored */}
       {inkSplatters.map((s) => (
@@ -214,21 +252,6 @@ export function Clicker() {
           +{GameStore.formatMoney(num.value)}
         </div>
       ))}
-
-      {/* Combo counter */}
-      {comboCount > 2 && (
-        <div
-          className="absolute -top-10 md:-top-12 left-1/2 animate-combo-pop pointer-events-none z-50 whitespace-nowrap"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: comboCount > 10 ? "1.5rem" : "1.25rem",
-            color: comboCount > 10 ? "var(--color-viral-bright)" : "var(--color-corruption)",
-            textShadow: `0 0 20px ${comboCount > 10 ? "var(--color-viral)" : "var(--color-corruption)"}`,
-          }}
-        >
-          {comboCount}x COMBO!
-        </div>
-      )}
 
       {/* Main stamp button - responsive sizing */}
       <div className="relative">

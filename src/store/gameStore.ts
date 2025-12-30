@@ -986,6 +986,10 @@ export namespace GameStore {
             state.totalArrestCount > 0 &&
             state.totalEarned >= ach.condition.amount;
           break;
+        case "playTime":
+          // Check if player has played for at least the specified time
+          earned = Date.now() - state.gameStartTime >= ach.condition.minTimeMs;
+          break;
         // Note: "arrested", "acquitted", and "maxSentence" are handled 
         // directly in Trial.tsx since they depend on trial outcomes
       }

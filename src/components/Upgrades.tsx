@@ -99,7 +99,7 @@ export function Upgrades() {
       )}
 
       {/* Zone upgrades */}
-      <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-[280px] lg:max-h-[360px] xl:max-h-[420px] 2xl:max-h-[480px] overflow-y-auto pr-1">
         {zoneUpgrades.map((upgrade, index) => (
           <Upgrades.Item
             key={upgrade.id}
@@ -138,7 +138,7 @@ export function Upgrades() {
               CLASSIFIED
             </div>
           </div>
-          <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+          <div className="space-y-2 max-h-[180px] lg:max-h-[220px] xl:max-h-[260px] 2xl:max-h-[300px] overflow-y-auto pr-1">
             {endgameUpgrades.map((upgrade, index) => (
               <Upgrades.Item
                 key={upgrade.id}

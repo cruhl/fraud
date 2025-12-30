@@ -10,6 +10,8 @@ export function Counter() {
   const ownedUpgrades = useGameStore((s) => s.ownedUpgrades);
   const unlockedZones = useGameStore((s) => s.unlockedZones);
   const gameStartTime = useGameStore((s) => s.gameStartTime);
+  const totalArrestCount = useGameStore((s) => s.totalArrestCount);
+  const lifetimeStats = useGameStore((s) => s.lifetimeStats);
   const [timePlayed, setTimePlayed] = useState(0);
 
   // Animation states
@@ -54,9 +56,10 @@ export function Counter() {
       GameStore.getPassiveIncome({
         ownedUpgrades,
         unlockedZones,
-        totalArrestCount: 0,
+        totalArrestCount,
+        lifetimeStats,
       } as never),
-    [ownedUpgrades, unlockedZones]
+    [ownedUpgrades, unlockedZones, totalArrestCount, lifetimeStats]
   );
 
   // Calculate trial acquittal bonus
@@ -96,9 +99,10 @@ export function Counter() {
         ownedUpgrades,
         unlockedZones,
         activeZone,
-        totalArrestCount: 0,
+        totalArrestCount,
+        lifetimeStats,
       } as never),
-    [ownedUpgrades, unlockedZones, activeZone]
+    [ownedUpgrades, unlockedZones, activeZone, totalArrestCount, lifetimeStats]
   );
 
   const progress = (totalEarned / GameStore.TARGET) * 100;

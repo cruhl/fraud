@@ -23,6 +23,10 @@ import {
   getSfxVolume,
   setSfxVolume,
 } from "~/hooks/useAudio";
+import { getCharacterImageUrl } from "~/lib/assets";
+
+// Nick Shirley character portrait URL for mobile alert
+const NICK_SHIRLEY_IMAGE = getCharacterImageUrl("nick-shirley");
 
 type MobileTab = "play" | "zones" | "shop" | "stats";
 
@@ -1094,39 +1098,44 @@ export function App() {
         }),
     };
 
-    console.log("🎮 Debug helpers loaded:");
-    console.log("  • dumpGameState() - dump current state as JSON");
-    console.log("  • injectState({...}) - inject partial state");
-    console.log("");
-    console.log("📊 Test Scenarios (testScenarios.*):");
-    console.log(
-      "  PROGRESSION: freshStart, earlyGame, firstUnlock, midGame, lateGame, endGame, allZones"
-    );
-    console.log(
-      "  VIEWS/THREAT: nearArrest, preTension, viralThreshold, nationalStory, maxDecay, richLowViews"
-    );
-    console.log(
-      "  VIEW CAPS: immunityDeal, dojContact, totalImmunity, diplomaticImmunity"
-    );
-    console.log(
-      "  TRIAL: triggerArrest, maxTrialBonus, prestige1, prestige3, prestige5"
-    );
-    console.log("  VICTORY: nearVictory, triggerVictory, postVictory");
-    console.log(
-      "  GOLDEN: goldenClaimReady, activeGoldenMoney, activeGoldenViews, activeGoldenDiscount"
-    );
-    console.log(
-      "  ZONES: daycareMax, medicalFraud, politicalFocus, shadowBankingFocus"
-    );
-    console.log(
-      "  SPECIAL: allLuxury, brokeButRich, nickInZone, activeDiscount, achievementHunter"
-    );
-    console.log("  STRATEGY: speedRunSetup, carefulCriminal");
-    console.log("");
-    console.log("  • gameStore.getState() / gameStore.setState({...})");
-    console.log(
-      "  • saveGame(name) / loadGame(name) / listSaves() / deleteSave(name)"
-    );
+    if (
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
+    ) {
+      console.log("🎮 Debug helpers loaded:");
+      console.log("  • dumpGameState() - dump current state as JSON");
+      console.log("  • injectState({...}) - inject partial state");
+      console.log("");
+      console.log("📊 Test Scenarios (testScenarios.*):");
+      console.log(
+        "  PROGRESSION: freshStart, earlyGame, firstUnlock, midGame, lateGame, endGame, allZones"
+      );
+      console.log(
+        "  VIEWS/THREAT: nearArrest, preTension, viralThreshold, nationalStory, maxDecay, richLowViews"
+      );
+      console.log(
+        "  VIEW CAPS: immunityDeal, dojContact, totalImmunity, diplomaticImmunity"
+      );
+      console.log(
+        "  TRIAL: triggerArrest, maxTrialBonus, prestige1, prestige3, prestige5"
+      );
+      console.log("  VICTORY: nearVictory, triggerVictory, postVictory");
+      console.log(
+        "  GOLDEN: goldenClaimReady, activeGoldenMoney, activeGoldenViews, activeGoldenDiscount"
+      );
+      console.log(
+        "  ZONES: daycareMax, medicalFraud, politicalFocus, shadowBankingFocus"
+      );
+      console.log(
+        "  SPECIAL: allLuxury, brokeButRich, nickInZone, activeDiscount, achievementHunter"
+      );
+      console.log("  STRATEGY: speedRunSetup, carefulCriminal");
+      console.log("");
+      console.log("  • gameStore.getState() / gameStore.setState({...})");
+      console.log(
+        "  • saveGame(name) / loadGame(name) / listSaves() / deleteSave(name)"
+      );
+    }
   }, []);
 
   // Screen shake on event
@@ -1341,7 +1350,8 @@ export function App() {
                 textShadow: "0 0 60px rgba(212, 180, 92, 0.15)",
               }}
             >
-              MINNESOTA FRAUD EMPIRE
+              <span className="md:hidden">MINNESOTA</span>
+              <span className="hidden md:inline">FRAUD RUN</span>
             </h1>
             {/* Tagline - hidden on very small screens */}
             <p
@@ -1551,7 +1561,7 @@ export function App() {
       {/* Main game area */}
       <main className="container mx-auto px-3 md:px-4 py-4 md:py-8">
         {/* DESKTOP LAYOUT */}
-        <div className="hidden lg:grid lg:grid-cols-[1fr_360px] gap-6 max-w-7xl mx-auto">
+        <div className="hidden lg:grid lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_440px] 2xl:grid-cols-[1fr_480px] gap-6 max-w-7xl mx-auto">
           {/* Left column */}
           <div className="space-y-5">
             {/* Clicker + Mini Counter row */}
@@ -1779,6 +1789,128 @@ export function App() {
                   }}
                 >
                   {GameStore.formatMoney(passiveIncome)}/s
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Nick Shirley Alert */}
+            <div
+              className="w-full mt-4 rounded-lg overflow-hidden"
+              style={{
+                background:
+                  viralViews >= 50_000_000
+                    ? "linear-gradient(90deg, rgba(185, 28, 28, 0.2), rgba(220, 38, 38, 0.15))"
+                    : viralViews >= 10_000_000
+                    ? "linear-gradient(90deg, rgba(249, 115, 22, 0.15), rgba(251, 146, 60, 0.1))"
+                    : "linear-gradient(90deg, rgba(74, 222, 128, 0.1), rgba(34, 197, 94, 0.08))",
+                border: `1px solid ${
+                  viralViews >= 50_000_000
+                    ? "rgba(220, 38, 38, 0.4)"
+                    : viralViews >= 10_000_000
+                    ? "rgba(249, 115, 22, 0.3)"
+                    : "rgba(74, 222, 128, 0.2)"
+                }`,
+              }}
+            >
+              <div className="flex items-center gap-2 px-3 py-2">
+                {/* Nick portrait */}
+                <div
+                  className={`w-8 h-8 rounded-full overflow-hidden shrink-0 ${
+                    nickShirleyLocation === activeZone
+                      ? "animate-warning-flash"
+                      : ""
+                  }`}
+                  style={{
+                    border: `2px solid ${
+                      viralViews >= 50_000_000
+                        ? "#dc2626"
+                        : viralViews >= 10_000_000
+                        ? "#f97316"
+                        : "#4ade80"
+                    }`,
+                    boxShadow:
+                      nickShirleyLocation === activeZone
+                        ? "0 0 12px rgba(220, 38, 38, 0.6)"
+                        : undefined,
+                  }}
+                >
+                  <img
+                    src={NICK_SHIRLEY_IMAGE}
+                    alt="Nick Shirley"
+                    className="w-full h-full object-cover ai-image-character"
+                  />
+                </div>
+
+                {/* Status text */}
+                <div className="flex-1 min-w-0">
+                  <div
+                    className="text-[10px] uppercase tracking-wider font-semibold truncate"
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      color:
+                        nickShirleyLocation === activeZone
+                          ? "#dc2626"
+                          : "var(--color-text-secondary)",
+                    }}
+                  >
+                    {nickShirleyLocation === activeZone ? (
+                      <span className="animate-warning-flash">
+                        ⚠ FILMING YOUR ZONE!
+                      </span>
+                    ) : (
+                      "Nick Shirley's Investigation"
+                    )}
+                  </div>
+                  {/* Progress bar */}
+                  <div
+                    className="h-1.5 rounded-full mt-1 overflow-hidden"
+                    style={{
+                      background: "rgba(0,0,0,0.3)",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    <div
+                      className="h-full transition-all duration-300"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          (viralViews / GameStore.VIRAL_LIMIT) * 100
+                        )}%`,
+                        background:
+                          viralViews >= 50_000_000
+                            ? "linear-gradient(90deg, #dc2626, #b91c1c)"
+                            : viralViews >= 10_000_000
+                            ? "linear-gradient(90deg, #f97316, #fb923c)"
+                            : "linear-gradient(90deg, #22c55e, #4ade80)",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Views count */}
+                <div
+                  className="text-right shrink-0"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  <div
+                    className="text-sm font-bold"
+                    style={{
+                      color:
+                        viralViews >= 50_000_000
+                          ? "#dc2626"
+                          : viralViews >= 10_000_000
+                          ? "#f97316"
+                          : "var(--color-text-primary)",
+                    }}
+                  >
+                    {GameStore.formatViews(viralViews)}
+                  </div>
+                  <div
+                    className="text-[8px] uppercase"
+                    style={{ color: "var(--color-text-dim)" }}
+                  >
+                    views
+                  </div>
                 </div>
               </div>
             </div>
