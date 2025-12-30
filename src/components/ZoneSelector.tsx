@@ -62,7 +62,7 @@ function useZoneStats(): Record<string, ZoneStats> {
         totalUpgrades: zoneUpgrades.length,
         passiveIncome,
         clickBonus,
-        viewReduction: Math.min(viewReduction, 95), // Cap display at 95%
+        viewReduction: Math.min(viewReduction, 85), // Cap display at 85%
       };
     }
 

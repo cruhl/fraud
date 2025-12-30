@@ -26,8 +26,8 @@ export const CREW_MEMBERS: CrewMember[] = [
     role: "State Inspector",
     imageId: "corrupt-inspector",
     cost: 500_000,
-    description: "Looks the other way during audits. -15% view gain.",
-    effect: { type: "viewGainReduction", percent: 0.15 },
+    description: "Looks the other way during audits. -5% view gain.",
+    effect: { type: "viewGainReduction", percent: 0.05 },
   },
   {
     id: "expensive-lawyer",

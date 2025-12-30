@@ -1076,8 +1076,8 @@ export namespace GameStore {
       }
     });
 
-    // Cap reduction at 95% - always get at least 5% of base views per click
-    multiplier = Math.max(multiplier, 0.05);
+    // Cap reduction at 85% - always get at least 15% of base views per click
+    multiplier = Math.max(multiplier, 0.15);
 
     return Math.floor(base * multiplier);
   };
@@ -1342,6 +1342,7 @@ export namespace GameStore {
   };
 
   // Get total view reduction percentage (0-1 where 1 = 100% reduction)
+  // Capped at 95% to match the actual reduction cap in getViewsGain
   export const getViewReductionPercent = (state: GameState): number => {
     let multiplier = 1;
     
@@ -1362,7 +1363,8 @@ export namespace GameStore {
       }
     });
     
-    return 1 - multiplier; // Convert to reduction percentage
+    // Cap at 85% reduction (matching getViewsGain minimum multiplier of 0.15)
+    return Math.min(1 - multiplier, 0.85);
   };
 
   // Get total click multiplier
