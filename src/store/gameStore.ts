@@ -47,6 +47,7 @@ export type GameState = {
   // Game state
   isGameOver: boolean;
   isVictory: boolean;
+  victoryDismissed: boolean;
   isArrested: boolean;
   isPaused: boolean;
 
@@ -97,6 +98,9 @@ export type GameActions = {
   triggerEvent: (event: PoliticalEvent) => void;
   reset: () => void;
   prestige: () => void;
+  /** New seizure-based prestige: keeps zones/upgrades, seizes money based on sentence */
+  prestigeWithSeizure: (sentence: number, wasAcquitted: boolean) => void;
+  dismissVictory: () => void;
   clickGoldenClaim: () => void;
   dismissGoldenClaim: () => void;
   unlockTrialAchievement: (type: "arrested" | "acquitted" | "maxSentence") => void;
@@ -125,6 +129,7 @@ const INITIAL_STATE: GameState = {
   maxThreatLevelReached: "safe",
   isGameOver: false,
   isVictory: false,
+  victoryDismissed: false,
   isArrested: false,
   isPaused: false,
   activeZone: "daycare",
@@ -153,13 +158,19 @@ export const useGameStore = create<GameStore>()(
 
       click: () => {
         const state = get();
-        if (state.isGameOver || state.isVictory || state.isPaused) return;
+        if (state.isGameOver || state.isPaused) return;
 
         set((s) => {
           const zone = ZONES.find((z) => z.id === s.activeZone);
           if (!zone) return s;
 
-          const clickValue = GameStore.getClickValue(s);
+          // Apply investigation income multiplier if active
+          let incomeMultiplier = 1;
+          if (s.activeEvent?.effect.type === "investigation") {
+            incomeMultiplier = s.activeEvent.effect.incomeMultiplier;
+          }
+
+          const clickValue = Math.floor(GameStore.getClickValue(s) * incomeMultiplier);
           const viewsGain = GameStore.getViewsGain(s, zone);
           const viewCap = GameStore.getViewCap(s);
           const newMoney = s.money + clickValue;
@@ -230,12 +241,16 @@ export const useGameStore = create<GameStore>()(
         if (!state.unlockedZones.includes(upgrade.zone)) return;
 
         const owned = state.ownedUpgrades[upgradeId] ?? 0;
+        
+        // Check if upgrade has reached max quantity
+        if (upgrade.maxQuantity !== undefined && owned >= upgrade.maxQuantity) return;
+        
         const discountActive = state.discountEndTime
           ? Date.now() < state.discountEndTime
           : false;
         const cost = GameStore.getUpgradeCost(upgrade, owned, discountActive);
 
-        if (state.money < cost || state.isGameOver || state.isVictory) return;
+        if (state.money < cost || state.isGameOver) return;
 
         set((s) => {
           const newAchievements = [...s.unlockedAchievements];
@@ -305,7 +320,7 @@ export const useGameStore = create<GameStore>()(
 
       tick: () => {
         const state = get();
-        if (state.isGameOver || state.isVictory) return;
+        if (state.isGameOver) return;
 
         set((s) => {
           const now = Date.now();
@@ -330,18 +345,29 @@ export const useGameStore = create<GameStore>()(
           const passiveIncome = GameStore.getPassiveIncome(s);
           const viewDecay = GameStore.getViewDecay(s);
 
-          // Random event trigger (1.5% chance per tick for more dynamic gameplay)
+          // Random event trigger (0.08% chance per tick for balanced gameplay)
           let eventViewGain = 0;
-          if (!activeEvent && Math.random() < 0.0015) {
+          let eventViewReduction = 0;
+          let eventMoneyBonus = 0;
+          if (!activeEvent && Math.random() < 0.0008) {
             const newEvent = getRandomEvent();
             activeEvent = newEvent;
             eventEndTime = now + newEvent.duration * 1000;
-            if (newEvent.effect.type === "pauseFraud") {
-              isPaused = true;
-            }
             // Apply immediate viewGain effect
             if (newEvent.effect.type === "viewGain") {
               eventViewGain = newEvent.effect.amount;
+            }
+            // Investigation effect: immediate view spike
+            if (newEvent.effect.type === "investigation") {
+              eventViewGain = newEvent.effect.viewGain;
+            }
+            // View reduction effect: immediate view decrease
+            if (newEvent.effect.type === "viewReduction") {
+              eventViewReduction = newEvent.effect.amount;
+            }
+            // Money bonus effect: immediate money gain
+            if (newEvent.effect.type === "moneyBonus") {
+              eventMoneyBonus = newEvent.effect.flat + (s.totalEarned * newEvent.effect.percent);
             }
           }
 
@@ -354,13 +380,26 @@ export const useGameStore = create<GameStore>()(
           if (activeEvent?.effect.type === "incomeMultiplier") {
             incomeMultiplier = activeEvent.effect.amount;
           }
+          // Investigation effect: reduced income + view spike already applied
+          if (activeEvent?.effect.type === "investigation") {
+            incomeMultiplier = activeEvent.effect.incomeMultiplier;
+          }
+          // Combo effect: both multipliers
+          if (activeEvent?.effect.type === "combo") {
+            incomeMultiplier = activeEvent.effect.incomeMultiplier;
+            viewMultiplier = activeEvent.effect.viewMultiplier;
+          }
 
-          const passiveGain = passiveIncome * delta * incomeMultiplier;
+          const passiveGain = passiveIncome * delta * incomeMultiplier + eventMoneyBonus;
 
-          // Passive income generates views (0.3x rate for balanced late-game)
+          // Passive income generates views (0.1x rate for balanced late-game)
           const passiveViewGain =
-            passiveIncome > 0 ? passiveIncome * 0.3 * delta * viewMultiplier : 0;
-          const netViewChange = passiveViewGain - viewDecay * delta + eventViewGain;
+            passiveIncome > 0 ? passiveIncome * 0.1 * delta * viewMultiplier : 0;
+          
+          // Decay can only reduce passive view gains by up to 90% (always gain at least 10%)
+          // This prevents "soft-lock" where decay upgrades completely zero out progress
+          const effectiveDecay = Math.min(viewDecay * delta, passiveViewGain * 0.9);
+          const netViewChange = passiveViewGain - effectiveDecay + eventViewGain - eventViewReduction;
           const viewCap = GameStore.getViewCap(s);
           const newViews = Math.min(
             viewCap,
@@ -368,7 +407,7 @@ export const useGameStore = create<GameStore>()(
           );
           const newThreatLevel = GameStore.getThreatLevel(newViews);
           const newMoney = s.money + passiveGain;
-          const newTotal = s.totalEarned + passiveGain;
+          const newTotal = s.totalEarned + (passiveGain > 0 ? passiveGain : 0);
 
           // Random Nick Shirley location
           let nickLocation = s.nickShirleyLocation;
@@ -466,15 +505,34 @@ export const useGameStore = create<GameStore>()(
 
           // Apply immediate effects
           let viralViews = s.viralViews;
+          let money = s.money;
+          let totalEarned = s.totalEarned;
+          
           if (event.effect.type === "viewGain") {
             viralViews += event.effect.amount;
+          }
+          // Investigation effect: immediate view spike
+          if (event.effect.type === "investigation") {
+            viralViews += event.effect.viewGain;
+          }
+          // View reduction effect
+          if (event.effect.type === "viewReduction") {
+            viralViews = Math.max(0, viralViews - event.effect.amount);
+          }
+          // Money bonus effect
+          if (event.effect.type === "moneyBonus") {
+            const bonus = event.effect.flat + (totalEarned * event.effect.percent);
+            money += bonus;
+            totalEarned += bonus;
           }
 
           return {
             activeEvent: event,
             eventEndTime: now + event.duration * 1000,
-            isPaused: event.effect.type === "pauseFraud",
+            isPaused: false, // No more pausing - investigation still allows play
             viralViews,
+            money,
+            totalEarned,
             threatLevel: GameStore.getThreatLevel(viralViews),
           };
         });
@@ -510,36 +568,98 @@ export const useGameStore = create<GameStore>()(
         });
       },
 
+      prestigeWithSeizure: (sentence: number, wasAcquitted: boolean) => {
+        const state = get();
+        const currentPrestigeStats = state.lifetimeStats ?? INITIAL_LIFETIME_STATS;
+        
+        // Calculate seizure rate based on sentence (0-90%)
+        // 1 year → ~3% seized, 28 years → ~93% seized
+        const seizureRate = wasAcquitted ? 0 : Math.min(0.93, sentence / 30);
+        const moneyToKeep = Math.floor(state.money * (1 - seizureRate));
+        
+        const newStats = {
+          ...currentPrestigeStats,
+          timesArrested: (currentPrestigeStats.timesArrested ?? 0) + 1,
+        };
+        
+        set({
+          // Reset core game state
+          money: moneyToKeep,
+          totalEarned: moneyToKeep, // Start fresh tracking from what you kept
+          fakeClaims: 0,
+          viralViews: 0,
+          nickShirleyLocation: null,
+          threatLevel: "safe" as ThreatLevel,
+          maxThreatLevelReached: "safe" as ThreatLevel,
+          isGameOver: false,
+          isVictory: false,
+          victoryDismissed: false,
+          isArrested: false,
+          isPaused: false,
+          
+          // KEEP zones and upgrades (connections persist)
+          activeZone: state.activeZone,
+          unlockedZones: state.unlockedZones,
+          ownedUpgrades: state.ownedUpgrades,
+          
+          // Reset events
+          activeEvent: null,
+          eventEndTime: null,
+          
+          // Keep achievements and prestige progress
+          unlockedAchievements: state.unlockedAchievements,
+          totalArrestCount: state.totalArrestCount + 1,
+          prestigeBonuses: state.prestigeBonuses,
+          
+          // Reset golden claims
+          goldenClaim: null,
+          lastGoldenClaimTime: 0,
+          discountEndTime: null,
+          
+          // Update lifetime stats
+          lifetimeStats: newStats,
+          
+          // Reset timing
+          lastTick: Date.now(),
+          gameStartTime: Date.now(),
+        });
+      },
+
+      dismissVictory: () => {
+        set({ victoryDismissed: true });
+      },
+
       clickGoldenClaim: () => {
         const state = get();
-        if (!state.goldenClaim || state.isGameOver || state.isVictory) return;
+        if (!state.goldenClaim || state.isGameOver) return;
 
         const now = Date.now();
         if (now > state.goldenClaim.expiresAt) return;
 
         set((s) => {
           const claim = s.goldenClaim!;
+          const goldenMultiplier = GameStore.getGoldenClaimMultiplier(s);
           let moneyBonus = 0;
           let viewsReduction = 0;
           let discountEndTime = s.discountEndTime;
 
           switch (claim.type) {
             case "money":
-              // 25x click value + 2% of total earned (min $1000)
+              // 25x click value + 2% of total earned (min $1000), boosted by multiplier
               const clickBonus = GameStore.getClickValue(s) * 25;
               const percentBonus = Math.max(1000, s.totalEarned * 0.02);
-              moneyBonus = clickBonus + percentBonus;
+              moneyBonus = (clickBonus + percentBonus) * goldenMultiplier;
               break;
             case "views":
-              // -5% of current views (min 10K, max 500K)
+              // -5% of current views (min 10K, max 500K), boosted by multiplier
               viewsReduction = Math.min(
-                500_000,
-                Math.max(10_000, s.viralViews * 0.05)
+                500_000 * goldenMultiplier,
+                Math.max(10_000, s.viralViews * 0.05 * goldenMultiplier)
               );
               break;
             case "discount":
-              // 25% off upgrades for 30 seconds
-              discountEndTime = now + 30_000;
+              // 25% off upgrades for 30 seconds (duration boosted)
+              discountEndTime = now + 30_000 * goldenMultiplier;
               break;
           }
 
@@ -616,6 +736,20 @@ export const useGameStore = create<GameStore>()(
 );
 
 export namespace GameStore {
+  // Get the allBonusMultiplier from luxury upgrades
+  export const getAllBonusMultiplier = (state: GameState): number => {
+    let multiplier = 1;
+    UPGRADES.forEach((upgrade) => {
+      const owned = state.ownedUpgrades[upgrade.id] ?? 0;
+      if (owned === 0) return;
+      if (!state.unlockedZones.includes(upgrade.zone)) return;
+      if (upgrade.effect.type === "allBonusMultiplier") {
+        multiplier *= Math.pow(upgrade.effect.amount, owned);
+      }
+    });
+    return multiplier;
+  };
+
   export const getClickValue = (state: GameState): number => {
     let base = 0;
     let multiplier = 1;
@@ -639,11 +773,12 @@ export namespace GameStore {
     });
 
     const prestigeMultiplier = getPrestigeMultiplier(state.totalArrestCount);
+    const allBonusMultiplier = getAllBonusMultiplier(state);
 
     // Victory bonus: +20% income if player has won before
     const victoryBonus = state.lifetimeStats?.fastestWinTime ? 1.2 : 1;
 
-    return Math.floor(base * multiplier * prestigeMultiplier * victoryBonus);
+    return Math.floor(base * multiplier * prestigeMultiplier * victoryBonus * allBonusMultiplier);
   };
 
   export const getPassiveIncome = (state: GameState): number => {
@@ -660,11 +795,12 @@ export namespace GameStore {
     });
 
     const prestigeMultiplier = getPrestigeMultiplier(state.totalArrestCount);
+    const allBonusMultiplier = getAllBonusMultiplier(state);
 
     // Victory bonus: +20% income if player has won before
     const victoryBonus = state.lifetimeStats?.fastestWinTime ? 1.2 : 1;
 
-    return total * prestigeMultiplier * victoryBonus;
+    return total * prestigeMultiplier * victoryBonus * allBonusMultiplier;
   };
 
   export const getViewsGain = (state: GameState, zone: Zone): number => {
@@ -695,8 +831,8 @@ export namespace GameStore {
   };
 
   export const getViewDecay = (state: GameState): number => {
-    // Base decay of 200/sec to reward patience
-    let total = 200;
+    // Base decay of 500/sec to help balance view accumulation
+    let total = 500;
     let multiplier = 1;
 
     UPGRADES.forEach((upgrade) => {
@@ -906,5 +1042,122 @@ export namespace GameStore {
   // Shared prestige multiplier (1 + bonus%)
   export const getPrestigeMultiplier = (arrests: number): number => {
     return 1 + getPrestigeBonusPercent(arrests) / 100;
+  };
+
+  // Get trial acquittal bonus from upgrades
+  export const getTrialAcquittalBonus = (state: GameState): number => {
+    let bonus = 0;
+    UPGRADES.forEach((upgrade) => {
+      const owned = state.ownedUpgrades[upgrade.id] ?? 0;
+      if (owned === 0) return;
+      if (!state.unlockedZones.includes(upgrade.zone)) return;
+      if (upgrade.effect.type === "trialBonus") {
+        bonus += upgrade.effect.acquittalChance * owned;
+      }
+    });
+    return Math.min(0.8, bonus); // Cap at 80% bonus
+  };
+
+  // Get golden claim multiplier from upgrades
+  export const getGoldenClaimMultiplier = (state: GameState): number => {
+    let multiplier = 1;
+    UPGRADES.forEach((upgrade) => {
+      const owned = state.ownedUpgrades[upgrade.id] ?? 0;
+      if (owned === 0) return;
+      if (!state.unlockedZones.includes(upgrade.zone)) return;
+      if (upgrade.effect.type === "goldenClaimBoost") {
+        multiplier *= Math.pow(upgrade.effect.multiplier, owned);
+      }
+    });
+    return multiplier;
+  };
+
+  // ============================================
+  // TRIAL SYSTEM - Evidence & Seizure Calculations
+  // ============================================
+
+  /**
+   * Calculate evidence strength based on viral views and fake claims
+   * Returns 0-1 where 1 = overwhelming evidence
+   */
+  export const getEvidenceStrength = (state: GameState): number => {
+    const viewsComponent = (state.viralViews / 80_000_000) * 0.6; // 60% weight
+    const claimsComponent = (state.fakeClaims / 5_000) * 0.4; // 40% weight
+    return Math.min(1, viewsComponent + claimsComponent);
+  };
+
+  /**
+   * Get evidence strength label for UI
+   */
+  export const getEvidenceLabel = (strength: number): string => {
+    if (strength >= 0.8) return "OVERWHELMING";
+    if (strength >= 0.6) return "STRONG";
+    if (strength >= 0.4) return "MODERATE";
+    if (strength >= 0.2) return "WEAK";
+    return "MINIMAL";
+  };
+
+  /**
+   * Calculate base sentence based on total earned (~$1.5M per year, max 28)
+   * Evidence strength adds 0-25% to sentence
+   */
+  export const calculateSentence = (totalEarned: number, evidenceStrength: number): number => {
+    const baseYears = Math.min(28, Math.ceil(totalEarned / 1_500_000));
+    const evidenceModifier = 1 + evidenceStrength * 0.25;
+    return Math.min(28, Math.max(1, Math.ceil(baseYears * evidenceModifier)));
+  };
+
+  /**
+   * Calculate seizure rate based on sentence (0-93%)
+   */
+  export const getSeizureRate = (sentence: number): number => {
+    return Math.min(0.93, sentence / 30);
+  };
+
+  /**
+   * Get acquittal chance for expensive lawyer (5-12% based on evidence)
+   */
+  export const getExpensiveLawyerAcquittalChance = (
+    evidenceStrength: number, 
+    trialBonus: number
+  ): number => {
+    // Base 12% at low evidence, down to 5% at high evidence
+    const baseChance = 0.12 - evidenceStrength * 0.07;
+    return Math.min(0.25, baseChance + trialBonus); // Cap at 25%
+  };
+
+  /**
+   * Get acquittal chance for public defender (2-5% based on evidence)
+   */
+  export const getPublicDefenderAcquittalChance = (
+    evidenceStrength: number,
+    trialBonus: number
+  ): number => {
+    // Base 5% at low evidence, down to 2% at high evidence
+    const baseChance = 0.05 - evidenceStrength * 0.03;
+    return Math.min(0.15, baseChance + trialBonus * 0.5); // Cap at 15%
+  };
+
+  /**
+   * Get sentence reduction for expensive lawyer (40-60%)
+   */
+  export const getExpensiveLawyerReduction = (evidenceStrength: number): number => {
+    // Better reduction when evidence is weaker
+    return 0.60 - evidenceStrength * 0.20; // 60% at low evidence, 40% at high
+  };
+
+  /**
+   * Get sentence reduction for public defender (15-30%)
+   */
+  export const getPublicDefenderReduction = (evidenceStrength: number): number => {
+    // Better reduction when evidence is weaker
+    return 0.30 - evidenceStrength * 0.15; // 30% at low evidence, 15% at high
+  };
+
+  /**
+   * Calculate lawyer cost (20% of money, min $100K, max $50M)
+   */
+  export const getLawyerCost = (money: number): number => {
+    return Math.min(50_000_000, Math.max(100_000, Math.floor(money * 0.20)));
   };
 }

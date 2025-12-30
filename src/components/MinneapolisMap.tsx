@@ -1,7 +1,52 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useGameStore, GameStore } from "~/store/gameStore";
 import { ZONES } from "~/data/zones";
+import { UPGRADES } from "~/data/upgrades";
 import { playSound } from "~/hooks/useAudio";
+import { getCharacterImageUrl } from "~/lib/assets";
+
+const NICK_SHIRLEY_IMAGE = getCharacterImageUrl("nick-shirley");
+
+
+type ZoneStats = {
+  upgradesOwned: number;
+  totalUpgrades: number;
+  passiveIncome: number;
+};
+
+function useZoneStats(): Record<string, ZoneStats> {
+  const ownedUpgrades = useGameStore((s) => s.ownedUpgrades);
+  const unlockedZones = useGameStore((s) => s.unlockedZones);
+
+  return useMemo(() => {
+    const stats: Record<string, ZoneStats> = {};
+
+    for (const zone of ZONES) {
+      const zoneUpgrades = UPGRADES.filter((u) => u.zone === zone.id);
+      let upgradesOwned = 0;
+      let passiveIncome = 0;
+
+      for (const upgrade of zoneUpgrades) {
+        const owned = ownedUpgrades[upgrade.id] ?? 0;
+        if (owned > 0) upgradesOwned += owned;
+
+        if (unlockedZones.includes(zone.id) && owned > 0) {
+          if (upgrade.effect.type === "passiveIncome") {
+            passiveIncome += upgrade.effect.amount * owned;
+          }
+        }
+      }
+
+      stats[zone.id] = {
+        upgradesOwned,
+        totalUpgrades: zoneUpgrades.length,
+        passiveIncome,
+      };
+    }
+
+    return stats;
+  }, [ownedUpgrades, unlockedZones]);
+}
 
 export function MinneapolisMap() {
   const money = useGameStore((s) => s.money);
@@ -10,17 +55,22 @@ export function MinneapolisMap() {
   const setActiveZone = useGameStore((s) => s.setActiveZone);
   const unlockZone = useGameStore((s) => s.unlockZone);
   const nickShirleyLocation = useGameStore((s) => s.nickShirleyLocation);
+  const zoneStats = useZoneStats();
+  const [hoveredZone, setHoveredZone] = useState<string | null>(null);
 
   const handleZoneClick = useCallback(
     (zoneId: string, isUnlocked: boolean, canAfford: boolean) => {
       if (isUnlocked) {
+        if (zoneId !== activeZone) {
+          playSound("zoneSwitch");
+        }
         setActiveZone(zoneId);
       } else if (canAfford) {
         unlockZone(zoneId);
         playSound("zoneUnlock");
       }
     },
-    [setActiveZone, unlockZone]
+    [setActiveZone, unlockZone, activeZone]
   );
 
   const zonePositions: Record<string, MinneapolisMap.Position> = useMemo(
@@ -98,6 +148,8 @@ export function MinneapolisMap() {
           <button
             key={zone.id}
             onClick={() => handleZoneClick(zone.id, isUnlocked, canAfford)}
+            onMouseEnter={() => setHoveredZone(zone.id)}
+            onMouseLeave={() => setHoveredZone(null)}
             disabled={!isUnlocked && !canAfford}
             className={`
               absolute transition-all duration-200 group
@@ -107,18 +159,29 @@ export function MinneapolisMap() {
               left: `${pos.x}%`,
               top: `${pos.y}%`,
               transform: "translate(-50%, -50%)",
+              zIndex: hoveredZone === zone.id || isActive ? 20 : isNickHere ? 15 : 10,
             }}
           >
-            {/* Nick Shirley camera indicator */}
+            {/* Nick Shirley portrait indicator */}
             {isNickHere && (
               <div
-                className="absolute -top-8 left-1/2 -translate-x-1/2 animate-bounce z-20"
+                className="absolute -top-10 left-1/2 -translate-x-1/2 animate-bounce z-20"
                 style={{
                   filter: "drop-shadow(0 2px 8px rgba(139, 47, 53, 0.8))",
                 }}
               >
                 <div className="relative">
-                  <span className="text-2xl">📷</span>
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-red-500">
+                    <img 
+                      src={NICK_SHIRLEY_IMAGE}
+                      alt="Nick Shirley"
+                      className="w-full h-full object-cover"
+                      onError={(e) => { 
+                        e.currentTarget.style.display = "none"; 
+                        e.currentTarget.parentElement!.innerHTML = '<span class="text-xl">📷</span>';
+                      }}
+                    />
+                  </div>
                   <div 
                     className="absolute inset-0 animate-ping rounded-full"
                     style={{ background: "rgba(139, 47, 53, 0.5)" }}
@@ -131,7 +194,7 @@ export function MinneapolisMap() {
             <div
               className={`
                 relative flex flex-col items-center transition-transform
-                ${isActive ? "scale-110" : "hover:scale-105"}
+                ${isActive ? "scale-110" : "hover:scale-110"}
               `}
             >
               {/* Pin head */}
@@ -177,15 +240,18 @@ export function MinneapolisMap() {
                 }}
               />
 
-              {/* Zone label */}
+              {/* Zone label with stats */}
               <div
-                className="absolute top-14 whitespace-nowrap px-2 py-1 rounded text-xs"
+                className="absolute top-14 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-1 rounded text-[10px] transition-all pointer-events-none"
                 style={{
                   background: "var(--color-bg-elevated)",
                   border: `1px solid ${isActive ? zone.color : "var(--color-border-card)"}`,
                   color: isUnlocked ? zone.color : "var(--color-text-muted)",
                   fontFamily: "var(--font-display)",
-                  letterSpacing: "0.05em",
+                  zIndex: hoveredZone === zone.id ? 50 : 1,
+                  boxShadow: hoveredZone === zone.id 
+                    ? `0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px ${zone.color}40` 
+                    : "0 2px 8px rgba(0,0,0,0.3)",
                 }}
               >
                 {zone.name}
@@ -195,11 +261,42 @@ export function MinneapolisMap() {
                     style={{ 
                       color: canAfford ? "var(--color-money)" : "var(--color-text-dim)",
                       fontFamily: "var(--font-mono)",
-                      fontSize: "10px",
                     }}
                   >
                     ({GameStore.formatMoney(zone.unlockCost)})
                   </span>
+                )}
+                
+                {/* Stats row - visible on hover only */}
+                {isUnlocked && hoveredZone === zone.id && (
+                  <div 
+                    className="flex items-center gap-1.5 mt-1 text-[9px]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    <span style={{ color: "var(--color-money)" }}>
+                      💰{GameStore.formatMoney(zone.baseClickValue)}
+                    </span>
+                    <span style={{ color: "var(--color-text-dim)" }}>•</span>
+                    <span style={{ color: "var(--color-danger-bright)" }}>
+                      👁️{(zone.viewsPerClick / 1000).toFixed(zone.viewsPerClick >= 10000 ? 0 : 1)}K
+                    </span>
+                    {zoneStats[zone.id]?.passiveIncome > 0 && (
+                      <>
+                        <span style={{ color: "var(--color-text-dim)" }}>•</span>
+                        <span style={{ color: "#10b981" }}>
+                          ⚡{GameStore.formatMoney(zoneStats[zone.id].passiveIncome)}/s
+                        </span>
+                      </>
+                    )}
+                    {zoneStats[zone.id]?.upgradesOwned > 0 && (
+                      <>
+                        <span style={{ color: "var(--color-text-dim)" }}>•</span>
+                        <span style={{ color: zone.color }}>
+                          ⬆️{zoneStats[zone.id].upgradesOwned}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -214,7 +311,7 @@ export function MinneapolisMap() {
                     border: `1px solid ${canAfford ? "var(--color-money)" : "var(--color-danger)"}40`,
                   }}
                 >
-                  {canAfford ? "UNLOCK" : "LOCKED"}
+                  {canAfford ? "UNLOCK" : "🔒"}
                 </div>
               )}
             </div>

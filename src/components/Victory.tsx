@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useGameStore, GameStore } from "~/store/gameStore";
 import { playSound } from "~/hooks/useAudio";
 import { getScreenImageUrl } from "~/lib/assets";
@@ -6,15 +6,32 @@ import { ZONES } from "~/data/zones";
 
 const VICTORY_IMAGE = getScreenImageUrl("victory");
 
+// Pre-generate sparkle positions (static, doesn't need to change)
+const SPARKLE_EMOJIS = ["🎉", "💰", "🏆", "💵", "⭐", "✨"];
+
 export function Victory() {
   const isVictory = useGameStore((s) => s.isVictory);
+  const victoryDismissed = useGameStore((s) => s.victoryDismissed);
   const totalEarned = useGameStore((s) => s.totalEarned);
   const fakeClaims = useGameStore((s) => s.fakeClaims);
   const viralViews = useGameStore((s) => s.viralViews);
   const unlockedZones = useGameStore((s) => s.unlockedZones);
   const totalArrestCount = useGameStore((s) => s.totalArrestCount);
   const prestige = useGameStore((s) => s.prestige);
+  const dismissVictory = useGameStore((s) => s.dismissVictory);
   const [particles, setParticles] = useState<Victory.Particle[]>([]);
+
+  // Pre-generate sparkle data once
+  const sparkles = useMemo(() => 
+    Array.from({ length: 15 }).map((_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 1 + Math.random(),
+      emoji: SPARKLE_EMOJIS[Math.floor(Math.random() * SPARKLE_EMOJIS.length)],
+    })), 
+  []);
 
   useEffect(() => {
     if (isVictory) {
@@ -31,7 +48,7 @@ export function Victory() {
     }
   }, [isVictory]);
 
-  if (!isVictory) return null;
+  if (!isVictory || victoryDismissed) return null;
 
   return (
     <div 
@@ -80,18 +97,18 @@ export function Victory() {
           </div>
 
           {/* Animated sparkles */}
-          {Array.from({ length: 15 }).map((_, i) => (
+          {sparkles.map((s) => (
             <span
-              key={i}
+              key={s.id}
               className="absolute text-2xl animate-bounce"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${1 + Math.random()}s`,
+                left: `${s.left}%`,
+                top: `${s.top}%`,
+                animationDelay: `${s.delay}s`,
+                animationDuration: `${s.duration}s`,
               }}
             >
-              {["🎉", "💰", "🏆", "💵", "⭐", "✨"][Math.floor(Math.random() * 6)]}
+              {s.emoji}
             </span>
           ))}
 
@@ -196,20 +213,35 @@ export function Victory() {
             </div>
           </div>
 
-          {/* Restart button */}
-          <button
-            onClick={prestige}
-            className="w-full py-4 rounded-lg font-bold text-lg transition-all hover:scale-[1.02]"
-            style={{
-              background: "linear-gradient(135deg, var(--color-money), var(--color-corruption))",
-              color: "var(--color-bg-primary)",
-              fontFamily: "var(--font-display)",
-              letterSpacing: "0.1em",
-              boxShadow: "0 4px 20px rgba(201, 162, 39, 0.4)",
-            }}
-          >
-            START NEW EMPIRE (+{GameStore.getNextPrestigeBonusPercent(totalArrestCount)}% BONUS)
-          </button>
+          {/* Action buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={dismissVictory}
+              className="flex-1 py-4 rounded-lg font-bold text-lg transition-all hover:scale-[1.02]"
+              style={{
+                background: "var(--color-bg-tertiary)",
+                color: "var(--color-text-primary)",
+                fontFamily: "var(--font-display)",
+                letterSpacing: "0.05em",
+                border: "2px solid var(--color-money)",
+              }}
+            >
+              KEEP PLAYING
+            </button>
+            <button
+              onClick={prestige}
+              className="flex-1 py-4 rounded-lg font-bold text-lg transition-all hover:scale-[1.02]"
+              style={{
+                background: "linear-gradient(135deg, var(--color-money), var(--color-corruption))",
+                color: "var(--color-bg-primary)",
+                fontFamily: "var(--font-display)",
+                letterSpacing: "0.05em",
+                boxShadow: "0 4px 20px rgba(201, 162, 39, 0.4)",
+              }}
+            >
+              NEW EMPIRE (+{GameStore.getNextPrestigeBonusPercent(totalArrestCount)}%)
+            </button>
+          </div>
 
           {totalArrestCount > 0 && (
             <div 

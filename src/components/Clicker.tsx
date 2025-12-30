@@ -1,7 +1,25 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { useGameStore, GameStore } from "~/store/gameStore";
 import { ZONES } from "~/data/zones";
-import { playSound } from "~/hooks/useAudio";
+import { playSound, type SoundType } from "~/hooks/useAudio";
+
+// Helper to select click sound based on click value
+const getClickSound = (clickValue: number): SoundType => {
+  if (clickValue >= 1_000_000) return "clickLarge";
+  if (clickValue >= 10_000) return "clickMedium";
+  return "click";
+};
+
+// Zone-themed particle colors
+const ZONE_PARTICLES: Record<string, string[]> = {
+  daycare: ["#f59e0b", "#fbbf24", "#fcd34d", "#10b981"],
+  housing: ["#3b82f6", "#60a5fa", "#93c5fd", "#c9a227"],
+  autism: ["#8b5cf6", "#a78bfa", "#c4b5fd", "#c9a227"],
+  medicaid: ["#ec4899", "#f472b6", "#f9a8d4", "#c9a227"],
+  political: ["#c9a227", "#e5b82a", "#fcd34d", "#8b7635"],
+  "food-program": ["#22c55e", "#4ade80", "#86efac", "#c9a227"],
+  endgame: ["#c4a44b", "#8b7635", "#fbbf24", "#f59e0b"],
+};
 
 export function Clicker() {
   const click = useGameStore((s) => s.click);
@@ -10,10 +28,17 @@ export function Clicker() {
   const unlockedZones = useGameStore((s) => s.unlockedZones);
   const isGameOver = useGameStore((s) => s.isGameOver);
   const isVictory = useGameStore((s) => s.isVictory);
+  const victoryDismissed = useGameStore((s) => s.victoryDismissed);
   const isPaused = useGameStore((s) => s.isPaused);
   const [isAnimating, setIsAnimating] = useState(false);
   const [floatingNumbers, setFloatingNumbers] = useState<Clicker.FloatingNumber[]>([]);
   const [inkSplatters, setInkSplatters] = useState<Clicker.InkSplatter[]>([]);
+  const [shockwaves, setShockwaves] = useState<Clicker.Shockwave[]>([]);
+  const [screenFlash, setScreenFlash] = useState(false);
+  const [stampImprints, setStampImprints] = useState<Clicker.StampImprint[]>([]);
+  const [colorParticles, setColorParticles] = useState<Clicker.ColorParticle[]>([]);
+  const [comboCount, setComboCount] = useState(0);
+  const comboTimeoutRef = useRef<number | null>(null);
 
   const zone = ZONES.find((z) => z.id === activeZone);
   const clickValue = GameStore.getClickValue({
@@ -25,30 +50,64 @@ export function Clicker() {
 
   const [particles, setParticles] = useState<Clicker.Particle[]>([]);
 
+  // Reset combo when it times out
+  useEffect(() => {
+    return () => {
+      if (comboTimeoutRef.current) clearTimeout(comboTimeoutRef.current);
+    };
+  }, []);
+
   const handleClick = useCallback(() => {
     if (isGameOver || isVictory || isPaused) return;
 
     click();
-    playSound("click");
+    playSound(getClickSound(clickValue));
     setIsAnimating(true);
     setTimeout(() => setIsAnimating(false), 200);
 
-    // Add floating number
+    // Track combo
+    setComboCount((prev) => prev + 1);
+    if (comboTimeoutRef.current) clearTimeout(comboTimeoutRef.current);
+    comboTimeoutRef.current = window.setTimeout(() => setComboCount(0), 800);
+
+    // Add shockwave effect
+    const shockwaveId = Date.now() + Math.random();
+    setShockwaves((prev) => [...prev, { id: shockwaveId }]);
+    setTimeout(() => {
+      setShockwaves((prev) => prev.filter((s) => s.id !== shockwaveId));
+    }, 500);
+
+    // Screen flash for big clicks ($1M+)
+    if (clickValue >= 1_000_000) {
+      setScreenFlash(true);
+      setTimeout(() => setScreenFlash(false), 150);
+    }
+
+    // Add stamp imprint ghost
+    const imprintId = Date.now() + Math.random();
+    setStampImprints((prev) => [...prev, { id: imprintId }]);
+    setTimeout(() => {
+      setStampImprints((prev) => prev.filter((s) => s.id !== imprintId));
+    }, 800);
+
+    // Add floating number with wiggle
     const id = Date.now() + Math.random();
     const x = 50 + (Math.random() - 0.5) * 40;
     const y = 30 + (Math.random() - 0.5) * 20;
-    setFloatingNumbers((prev) => [...prev, { id, value: clickValue, x, y }]);
+    const rotation = (Math.random() - 0.5) * 20;
+    setFloatingNumbers((prev) => [...prev, { id, value: clickValue, x, y, rotation }]);
     setTimeout(() => {
       setFloatingNumbers((prev) => prev.filter((n) => n.id !== id));
-    }, 800);
+    }, 1000);
 
-    // Add ink splatters
+    // Add ink splatters (more on big clicks)
     const splatterId = Date.now() + Math.random();
-    const splatters: Clicker.InkSplatter[] = Array.from({ length: 3 }).map((_, i) => ({
+    const splatterCount = clickValue >= 1_000_000 ? 6 : clickValue >= 10_000 ? 4 : 3;
+    const splatters: Clicker.InkSplatter[] = Array.from({ length: splatterCount }).map((_, i) => ({
       id: splatterId + i,
-      x: 50 + (Math.random() - 0.5) * 60,
-      y: 50 + (Math.random() - 0.5) * 60,
-      size: 10 + Math.random() * 20,
+      x: 50 + (Math.random() - 0.5) * 80,
+      y: 50 + (Math.random() - 0.5) * 80,
+      size: 15 + Math.random() * 30,
       rotation: Math.random() * 360,
     }));
     setInkSplatters((prev) => [...prev, ...splatters]);
@@ -56,22 +115,46 @@ export function Clicker() {
       setInkSplatters((prev) => prev.filter((s) => !splatters.some((ns) => ns.id === s.id)));
     }, 400);
 
-    // Add particles
-    const newParticles: Clicker.Particle[] = [];
-    const particleCount = 8;
-    for (let i = 0; i < particleCount; i++) {
-      const angle = (i / particleCount) * Math.PI * 2;
-      const distance = 50 + Math.random() * 50;
-      newParticles.push({
-        id: Date.now() + Math.random(),
-        emoji: ["💵", "💰", "📄", "💸", "🧾", "📋"][Math.floor(Math.random() * 6)],
+    // Add zone-colored particles with spiral motion
+    const zoneColors = ZONE_PARTICLES[activeZone] || ZONE_PARTICLES.daycare;
+    const colorParticleCount = clickValue >= 1_000_000 ? 16 : clickValue >= 10_000 ? 12 : 8;
+    const batchId = Date.now();
+    const newColorParticles: Clicker.ColorParticle[] = Array.from({ length: colorParticleCount }).map((_, i) => {
+      const angle = (i / colorParticleCount) * Math.PI * 2 + Math.random() * 0.3;
+      const distance = 60 + Math.random() * 80;
+      return {
+        id: batchId + Math.random() + i,
+        color: zoneColors[Math.floor(Math.random() * zoneColors.length)],
         tx: Math.cos(angle) * distance,
         ty: Math.sin(angle) * distance,
+        rotation: 360 + Math.random() * 360,
+        size: 4 + Math.random() * 6,
+      };
+    });
+    setColorParticles((prev) => [...prev, ...newColorParticles]);
+    setTimeout(() => {
+      setColorParticles((prev) => prev.filter((p) => !newColorParticles.some((np) => np.id === p.id)));
+    }, 700);
+
+    // Add emoji particles with spiral
+    const newParticles: Clicker.Particle[] = [];
+    const particleCount = clickValue >= 1_000_000 ? 12 : 8;
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i / particleCount) * Math.PI * 2;
+      const distance = 60 + Math.random() * 60;
+      newParticles.push({
+        id: batchId + Math.random() + i + 1000,
+        emoji: ["💵", "💰", "📄", "💸", "🧾", "📋", "✨", "💎"][Math.floor(Math.random() * 8)],
+        tx: Math.cos(angle) * distance,
+        ty: Math.sin(angle) * distance,
+        rotation: 180 + Math.random() * 360,
       });
     }
-    setParticles(newParticles);
-    setTimeout(() => setParticles([]), 600);
-  }, [click, clickValue, isGameOver, isVictory, isPaused]);
+    setParticles((prev) => [...prev, ...newParticles]);
+    setTimeout(() => {
+      setParticles((prev) => prev.filter((p) => !newParticles.some((np) => np.id === p.id)));
+    }, 700);
+  }, [click, clickValue, isGameOver, isVictory, isPaused, activeZone]);
 
   const getStampContent = () => {
     switch (activeZone) {
@@ -96,7 +179,9 @@ export function Clicker() {
 
   return (
     <div className="relative flex flex-col items-center">
-      {/* Ink splatters */}
+
+
+      {/* Ink splatters - zone colored */}
       {inkSplatters.map((s) => (
         <div
           key={s.id}
@@ -106,45 +191,44 @@ export function Clicker() {
             top: `${s.y}%`,
             width: s.size,
             height: s.size,
-            background: "radial-gradient(circle, rgba(139, 47, 53, 0.6) 0%, rgba(139, 47, 53, 0) 70%)",
+            background: `radial-gradient(circle, ${zone?.color || "rgba(139, 47, 53, 1)"}80 0%, transparent 70%)`,
             transform: `translate(-50%, -50%) rotate(${s.rotation}deg)`,
           }}
         />
       ))}
 
-      {/* Particles */}
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          className="absolute text-base md:text-xl pointer-events-none animate-particle-burst"
-          style={
-            {
-              left: "50%",
-              top: "50%",
-              "--tx": `${p.tx}px`,
-              "--ty": `${p.ty}px`,
-            } as React.CSSProperties
-          }
-        >
-          {p.emoji}
-        </div>
-      ))}
 
-      {/* Floating numbers */}
+      {/* Floating numbers with wiggle */}
       {floatingNumbers.map((num) => (
         <div
           key={num.id}
-          className="absolute font-mono text-lg md:text-2xl font-bold animate-float-up pointer-events-none z-10"
+          className="absolute font-mono text-lg md:text-2xl font-bold animate-float-wiggle pointer-events-none z-10"
           style={{
             left: `${num.x}%`,
             top: `${num.y}%`,
             color: "var(--color-money-bright)",
-            textShadow: "0 2px 10px rgba(201, 162, 39, 0.5)",
+            textShadow: `0 2px 10px rgba(201, 162, 39, 0.6), 0 0 20px rgba(201, 162, 39, 0.4)`,
+            transform: `rotate(${num.rotation}deg)`,
           }}
         >
           +{GameStore.formatMoney(num.value)}
         </div>
       ))}
+
+      {/* Combo counter */}
+      {comboCount > 2 && (
+        <div
+          className="absolute -top-10 md:-top-12 left-1/2 animate-combo-pop pointer-events-none z-50 whitespace-nowrap"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: comboCount > 10 ? "1.5rem" : "1.25rem",
+            color: comboCount > 10 ? "var(--color-viral-bright)" : "var(--color-corruption)",
+            textShadow: `0 0 20px ${comboCount > 10 ? "var(--color-viral)" : "var(--color-corruption)"}`,
+          }}
+        >
+          {comboCount}x COMBO!
+        </div>
+      )}
 
       {/* Main stamp button - responsive sizing */}
       <div className="relative">
@@ -158,9 +242,9 @@ export function Clicker() {
 
         <button
           onClick={handleClick}
-          disabled={isGameOver || isVictory || isPaused}
+          disabled={isGameOver || (isVictory && !victoryDismissed) || isPaused}
           className={`
-            relative rounded-2xl
+            relative rounded-2xl overflow-visible
             w-36 h-36 md:w-48 md:h-48 lg:w-52 lg:h-52
             flex flex-col items-center justify-center
             font-display text-white font-bold
@@ -178,6 +262,105 @@ export function Clicker() {
             transform: isAnimating ? "translateY(6px)" : undefined,
           }}
         >
+          {/* Screen flash for big clicks */}
+          {screenFlash && (
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-40 overflow-visible"
+            >
+              <div
+                className="animate-screen-flash"
+                style={{
+                  width: "400px",
+                  height: "400px",
+                  borderRadius: "50%",
+                  background: `radial-gradient(circle, ${zone?.color || "var(--color-money-bright)"}60, ${zone?.color || "var(--color-money-bright)"}20 40%, transparent 70%)`,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Shockwave rings */}
+          {shockwaves.map((s) => (
+            <div
+              key={s.id}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 overflow-visible"
+            >
+              <div
+                className="animate-shockwave"
+                style={{
+                  width: "300px",
+                  height: "300px",
+                  borderRadius: "50%",
+                  border: `4px solid ${zone?.color || "var(--color-money)"}`,
+                }}
+              />
+            </div>
+          ))}
+
+          {/* Stamp imprint ghosts */}
+          {stampImprints.map((s) => (
+            <div
+              key={s.id}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-5 overflow-visible"
+            >
+              <div
+                className="animate-stamp-imprint"
+                style={{
+                  width: "160px",
+                  height: "160px",
+                  borderRadius: "50%",
+                  border: `3px solid ${zone?.color || "var(--color-money)"}60`,
+                  background: `radial-gradient(circle, ${zone?.color || "var(--color-money)"}15, transparent 70%)`,
+                }}
+              />
+            </div>
+          ))}
+
+          {/* Zone-colored particles */}
+          {colorParticles.map((p) => (
+            <div
+              key={p.id}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 overflow-visible"
+            >
+              <div
+                className="animate-spiral-burst"
+                style={
+                  {
+                    width: p.size,
+                    height: p.size,
+                    borderRadius: "50%",
+                    background: p.color,
+                    boxShadow: `0 0 ${p.size}px ${p.color}`,
+                    "--tx": `${p.tx}px`,
+                    "--ty": `${p.ty}px`,
+                    "--rot": `${p.rotation}deg`,
+                  } as React.CSSProperties
+                }
+              />
+            </div>
+          ))}
+
+          {/* Emoji particles with spiral */}
+          {particles.map((p) => (
+            <div
+              key={p.id}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 overflow-visible text-base md:text-xl"
+            >
+              <div
+                className="animate-spiral-burst"
+                style={
+                  {
+                    "--tx": `${p.tx}px`,
+                    "--ty": `${p.ty}px`,
+                    "--rot": `${p.rotation}deg`,
+                  } as React.CSSProperties
+                }
+              >
+                {p.emoji}
+              </div>
+            </div>
+          ))}
+
           {/* Glossy shine effect */}
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none overflow-hidden"
@@ -263,6 +446,7 @@ export namespace Clicker {
     value: number;
     x: number;
     y: number;
+    rotation: number;
   };
 
   export type Particle = {
@@ -270,6 +454,7 @@ export namespace Clicker {
     emoji: string;
     tx: number;
     ty: number;
+    rotation: number;
   };
 
   export type InkSplatter = {
@@ -278,5 +463,22 @@ export namespace Clicker {
     y: number;
     size: number;
     rotation: number;
+  };
+
+  export type Shockwave = {
+    id: number;
+  };
+
+  export type StampImprint = {
+    id: number;
+  };
+
+  export type ColorParticle = {
+    id: number;
+    color: string;
+    tx: number;
+    ty: number;
+    rotation: number;
+    size: number;
   };
 }

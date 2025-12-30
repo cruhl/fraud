@@ -13,10 +13,17 @@ export function Upgrades() {
   const discountEndTime = useGameStore((s) => s.discountEndTime);
 
   const [isDiscountActive, setIsDiscountActive] = useState(false);
+  const [discountTimeLeft, setDiscountTimeLeft] = useState(0);
 
   useEffect(() => {
     const checkDiscount = () => {
-      setIsDiscountActive(discountEndTime ? Date.now() < discountEndTime : false);
+      if (discountEndTime && Date.now() < discountEndTime) {
+        setIsDiscountActive(true);
+        setDiscountTimeLeft(Math.ceil((discountEndTime - Date.now()) / 1000));
+      } else {
+        setIsDiscountActive(false);
+        setDiscountTimeLeft(0);
+      }
     };
     checkDiscount();
     const interval = setInterval(checkDiscount, 100);
@@ -42,16 +49,21 @@ export function Upgrades() {
         <div className="flex items-center gap-2">
           <span className="text-lg">📦</span>
           <h2 
-            className="text-lg tracking-wide"
-            style={{ fontFamily: "var(--font-display)", color: "var(--color-text-primary)" }}
+            className="text-lg tracking-widest"
+            style={{ 
+              fontFamily: "var(--font-display)", 
+              color: "var(--color-text-primary)",
+              letterSpacing: "0.15em",
+            }}
           >
             PROCUREMENT
           </h2>
         </div>
         <div 
-          className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded"
+          className="text-[9px] uppercase tracking-[0.1em] px-2.5 py-1 rounded-md"
           style={{ 
-            background: "var(--color-bg-primary)",
+            background: "linear-gradient(180deg, var(--color-bg-primary), rgba(0,0,0,0.3))",
+            border: "1px solid var(--color-border-card)",
             color: "var(--color-text-muted)",
             fontFamily: "var(--font-mono)",
           }}
@@ -60,10 +72,10 @@ export function Upgrades() {
         </div>
       </div>
 
-      {/* Discount banner */}
+      {/* Discount banner with countdown */}
       {isDiscountActive && (
         <div 
-          className="text-center py-2 px-3 rounded-md animate-glow-pulse"
+          className={`flex items-center justify-between py-2 px-3 rounded-md ${discountTimeLeft <= 5 ? "animate-warning-flash" : "animate-glow-pulse"}`}
           style={{
             background: "linear-gradient(90deg, var(--color-corruption-dim), var(--color-money), var(--color-corruption-dim))",
             color: "var(--color-bg-primary)",
@@ -71,7 +83,18 @@ export function Upgrades() {
             letterSpacing: "0.1em",
           }}
         >
-          🏷️ 25% OFF ALL REQUISITIONS
+          <span>🏷️ 25% OFF ALL REQUISITIONS</span>
+          <span 
+            className="font-bold px-2 py-0.5 rounded"
+            style={{
+              background: discountTimeLeft <= 5 ? "rgba(139, 47, 53, 0.8)" : "rgba(0,0,0,0.3)",
+              color: discountTimeLeft <= 5 ? "white" : "var(--color-bg-primary)",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.875rem",
+            }}
+          >
+            ⏱ {discountTimeLeft}s
+          </span>
         </div>
       )}
 
@@ -146,6 +169,16 @@ export namespace Upgrades {
     isEndgame?: boolean;
   };
 
+  export type Particle = {
+    id: number;
+    x: number;
+    y: number;
+    tx: number;
+    ty: number;
+    rot: number;
+    emoji: string;
+  };
+
   export function Item({
     upgrade,
     owned,
@@ -159,14 +192,42 @@ export namespace Upgrades {
       () => GameStore.getUpgradeCost(upgrade, owned, discountActive),
       [upgrade, owned, discountActive]
     );
-    const canAfford = money >= cost;
+    const isMaxed = upgrade.maxQuantity !== undefined && owned >= upgrade.maxQuantity;
+    const canAfford = money >= cost && !isMaxed;
     const [justBought, setJustBought] = useState(false);
+    const [showAcquiredStamp, setShowAcquiredStamp] = useState(false);
+    const [particles, setParticles] = useState<Particle[]>([]);
+    const [countBounce, setCountBounce] = useState(false);
+    const [flashHighlight, setFlashHighlight] = useState(false);
 
     const handleBuy = useCallback(() => {
       onBuy(upgrade.id);
       playSound("purchase");
+      
+      // Trigger all juice effects
       setJustBought(true);
-      setTimeout(() => setJustBought(false), 300);
+      setShowAcquiredStamp(true);
+      setCountBounce(true);
+      setFlashHighlight(true);
+      
+      // Create particle burst
+      const newParticles: Particle[] = Array.from({ length: 8 }).map((_, i) => ({
+        id: Date.now() + i,
+        x: 20 + Math.random() * 60,
+        y: 30 + Math.random() * 40,
+        tx: (Math.random() - 0.5) * 80,
+        ty: -30 - Math.random() * 40,
+        rot: Math.random() * 360,
+        emoji: ["💵", "✨", "💰", "📋", "✓"][Math.floor(Math.random() * 5)],
+      }));
+      setParticles(newParticles);
+      
+      // Clear effects
+      setTimeout(() => setJustBought(false), 350);
+      setTimeout(() => setShowAcquiredStamp(false), 600);
+      setTimeout(() => setParticles([]), 600);
+      setTimeout(() => setCountBounce(false), 300);
+      setTimeout(() => setFlashHighlight(false), 200);
     }, [onBuy, upgrade.id]);
 
     return (
@@ -175,36 +236,83 @@ export namespace Upgrades {
         disabled={!canAfford}
         className={`
           w-full p-3 rounded-md text-left transition-all duration-200 relative overflow-hidden group
-          ${justBought ? "animate-stamp" : ""}
+          ${justBought ? "animate-purchase-punch" : canAfford ? "hover:animate-breathe" : ""}
         `}
         style={{
           animationDelay: `${delay}ms`,
-          background: canAfford 
-            ? isEndgame 
-              ? "linear-gradient(135deg, var(--color-corruption)15, var(--color-bg-elevated))"
-              : "var(--color-bg-elevated)"
-            : "var(--color-bg-primary)",
-          border: `1px solid ${canAfford 
-            ? isEndgame 
-              ? "var(--color-corruption-dim)" 
-              : "var(--color-border-highlight)"
-            : "var(--color-border-card)"
+          background: flashHighlight
+            ? `linear-gradient(135deg, ${isEndgame ? "var(--color-corruption)" : "var(--color-money)"}30, var(--color-bg-elevated))`
+            : canAfford 
+              ? isEndgame 
+                ? "linear-gradient(135deg, var(--color-corruption)15, var(--color-bg-elevated))"
+                : "var(--color-bg-elevated)"
+              : "var(--color-bg-primary)",
+          border: `1px solid ${flashHighlight
+            ? isEndgame ? "var(--color-corruption)" : "var(--color-money)"
+            : canAfford 
+              ? isEndgame 
+                ? "var(--color-corruption-dim)" 
+                : "var(--color-border-highlight)"
+              : "var(--color-border-card)"
           }`,
           opacity: canAfford ? 1 : 0.6,
           cursor: canAfford ? "pointer" : "not-allowed",
-          boxShadow: canAfford 
-            ? isEndgame
-              ? "0 0 20px rgba(196, 164, 75, 0.15)"
-              : "0 2px 8px rgba(0,0,0,0.2)"
-            : undefined,
+          boxShadow: flashHighlight
+            ? `0 0 30px ${isEndgame ? "rgba(196, 164, 75, 0.5)" : "rgba(201, 162, 39, 0.5)"}`
+            : canAfford 
+              ? isEndgame
+                ? "0 0 20px rgba(196, 164, 75, 0.15)"
+                : "0 2px 8px rgba(0,0,0,0.2)"
+              : undefined,
         }}
       >
+        {/* Purchase particles */}
+        {particles.map((p) => (
+          <div
+            key={p.id}
+            className="absolute text-lg pointer-events-none animate-confetti-burst z-20"
+            style={{
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              "--tx": `${p.tx}px`,
+              "--ty": `${p.ty}px`,
+              "--rot": `${p.rot}deg`,
+            } as React.CSSProperties}
+          >
+            {p.emoji}
+          </div>
+        ))}
+
+        {/* ACQUIRED stamp overlay */}
+        {showAcquiredStamp && (
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
+          >
+            <div
+              className="animate-acquire-stamp"
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                fontFamily: "var(--font-display)",
+                fontSize: "1.5rem",
+                color: isEndgame ? "var(--color-corruption)" : "var(--color-money)",
+                textShadow: `0 0 20px ${isEndgame ? "var(--color-corruption)" : "var(--color-money)"}`,
+                letterSpacing: "0.15em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              ✓ ACQUIRED
+            </div>
+          </div>
+        )}
+
         {/* Hover glow effect */}
-        {canAfford && (
+        {canAfford && !justBought && (
           <div 
             className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
             style={{
-              background: `radial-gradient(circle at center, ${isEndgame ? "var(--color-corruption)" : "var(--color-money)"}15 0%, transparent 70%)`,
+              background: `radial-gradient(circle at center, ${isEndgame ? "var(--color-corruption)" : "var(--color-money)"}20 0%, transparent 70%)`,
             }}
           />
         )}
@@ -214,18 +322,26 @@ export namespace Upgrades {
           className="absolute top-2 right-2 text-[8px] uppercase tracking-wider px-1.5 py-0.5 rounded"
           style={{
             fontFamily: "var(--font-mono)",
-            background: canAfford ? "var(--color-money)20" : "var(--color-danger)20",
-            color: canAfford ? "var(--color-money)" : "var(--color-danger-bright)",
+            background: isMaxed 
+              ? "var(--color-corruption)20" 
+              : canAfford 
+                ? "var(--color-money)20" 
+                : "var(--color-danger)20",
+            color: isMaxed 
+              ? "var(--color-corruption)" 
+              : canAfford 
+                ? "var(--color-money)" 
+                : "var(--color-danger-bright)",
           }}
         >
-          {canAfford ? "IN STOCK" : "LOCKED"}
+          {isMaxed ? "SOLD OUT" : canAfford ? "IN STOCK" : "LOCKED"}
         </div>
 
         {/* Main content */}
         <div className="flex items-start gap-3">
           {/* Icon/Image */}
           <div 
-            className="text-2xl w-10 h-10 flex items-center justify-center rounded-md shrink-0"
+            className={`text-2xl w-10 h-10 flex items-center justify-center rounded-md shrink-0 transition-transform ${justBought ? "animate-rubberband" : ""}`}
             style={{
               background: "var(--color-bg-primary)",
               border: "1px solid var(--color-border-card)",
@@ -246,14 +362,16 @@ export namespace Upgrades {
               </span>
               {owned > 0 && (
                 <span 
-                  className="text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                  className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${countBounce ? "animate-rubberband" : ""}`}
                   style={{ 
-                    background: "var(--color-money)20",
-                    color: "var(--color-money)",
+                    background: isMaxed ? "var(--color-corruption)20" : "var(--color-money)20",
+                    color: isMaxed ? "var(--color-corruption)" : "var(--color-money)",
                     fontFamily: "var(--font-mono)",
                   }}
                 >
-                  ×{owned}
+                  {upgrade.maxQuantity !== undefined 
+                    ? `${owned}/${upgrade.maxQuantity}` 
+                    : `×${owned}`}
                 </span>
               )}
             </div>
@@ -268,6 +386,36 @@ export namespace Upgrades {
             >
               {upgrade.description}
             </div>
+
+            {/* Cumulative effect total for stacking upgrades */}
+            {owned > 1 && (
+              <div
+                className="text-[10px] mt-0.5"
+                style={{ 
+                  color: "var(--color-text-muted)", 
+                  fontFamily: "var(--font-mono)" 
+                }}
+              >
+                {upgrade.effect.type === "passiveIncome" && (
+                  <>= ${(upgrade.effect.amount * owned).toLocaleString()}/s total</>
+                )}
+                {upgrade.effect.type === "clickBonus" && (
+                  <>= +${(upgrade.effect.amount * owned).toLocaleString()}/click total</>
+                )}
+                {upgrade.effect.type === "viewDecay" && (
+                  <>= -{(upgrade.effect.amount * owned).toLocaleString()} views/s total</>
+                )}
+                {upgrade.effect.type === "clickMultiplier" && (
+                  <>= ×{Math.pow(upgrade.effect.amount, owned).toFixed(2)} total</>
+                )}
+                {upgrade.effect.type === "viewReduction" && (
+                  <>= -{Math.round((1 - Math.pow(1 - upgrade.effect.amount, owned)) * 100)}% views total</>
+                )}
+                {upgrade.effect.type === "viewDecayMultiplier" && (
+                  <>= ×{Math.pow(upgrade.effect.amount, owned).toFixed(2)} decay total</>
+                )}
+              </div>
+            )}
 
             {/* Flavor text */}
             <div 
@@ -288,22 +436,26 @@ export namespace Upgrades {
             className="text-[9px] uppercase tracking-wider"
             style={{ color: "var(--color-text-dim)", fontFamily: "var(--font-mono)" }}
           >
-            REQUISITION COST
+            {isMaxed ? "STATUS" : "REQUISITION COST"}
           </span>
           <span 
             className="font-bold"
             style={{ 
               fontFamily: "var(--font-mono)",
-              color: canAfford ? "var(--color-money-bright)" : "var(--color-text-muted)",
-              textShadow: canAfford ? "0 0 10px rgba(201, 162, 39, 0.3)" : undefined,
+              color: isMaxed 
+                ? "var(--color-corruption)" 
+                : canAfford 
+                  ? "var(--color-money-bright)" 
+                  : "var(--color-text-muted)",
+              textShadow: canAfford && !isMaxed ? "0 0 10px rgba(201, 162, 39, 0.3)" : undefined,
             }}
           >
-            {GameStore.formatMoney(cost)}
+            {isMaxed ? "✓ ACQUIRED" : GameStore.formatMoney(cost)}
           </span>
         </div>
 
         {/* Purchased stamp overlay */}
-        {owned > 0 && (
+        {owned > 0 && !showAcquiredStamp && (
           <div 
             className="absolute top-1/2 right-3 -translate-y-1/2 rotate-[-15deg] pointer-events-none opacity-10"
             style={{
