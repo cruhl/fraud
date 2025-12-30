@@ -324,17 +324,17 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "speed-run",
     name: "Speed Run",
-    description: "Win in under 20 minutes",
+    description: "Win in under 25 minutes",
     icon: "⚡",
-    condition: { type: "speedWin", maxTimeMs: 20 * 60 * 1000 },
+    condition: { type: "speedWin", maxTimeMs: 25 * 60 * 1000 },
     secret: true,
   },
   {
     id: "speed-demon",
     name: "Speed Demon",
-    description: "Win in under 15 minutes",
+    description: "Win in under 18 minutes",
     icon: "🏎️",
-    condition: { type: "speedWin", maxTimeMs: 15 * 60 * 1000 },
+    condition: { type: "speedWin", maxTimeMs: 18 * 60 * 1000 },
     secret: true,
   },
   {

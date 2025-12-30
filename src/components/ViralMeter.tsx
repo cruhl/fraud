@@ -32,7 +32,7 @@ export function ViralMeter() {
     const viewDecay = GameStore.getViewDecay(pseudoState);
     const viewCap = GameStore.getViewCap(pseudoState);
     const passiveIncome = GameStore.getPassiveIncome(pseudoState);
-    const passiveViews = passiveIncome * 0.1; // Views generated from passive income
+    const passiveViews = passiveIncome * 0.05; // Views generated from passive income
     const prestigeDecayBonus = totalArrestCount * 5; // Percentage bonus
     const isNickFilming = nickShirleyLocation === activeZone;
     const hasViewCapUpgrade = viewCap < GameStore.VIRAL_LIMIT;

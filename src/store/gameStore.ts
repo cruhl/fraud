@@ -392,9 +392,9 @@ export const useGameStore = create<GameStore>()(
 
           const passiveGain = passiveIncome * delta * incomeMultiplier + eventMoneyBonus;
 
-          // Passive income generates views (0.1x rate for balanced late-game)
+          // Passive income generates views (0.05x rate for balanced late-game)
           const passiveViewGain =
-            passiveIncome > 0 ? passiveIncome * 0.1 * delta * viewMultiplier : 0;
+            passiveIncome > 0 ? passiveIncome * 0.05 * delta * viewMultiplier : 0;
           
           // Decay can only reduce passive view gains by up to 90% (always gain at least 10%)
           // This prevents "soft-lock" where decay upgrades completely zero out progress
@@ -831,8 +831,8 @@ export namespace GameStore {
   };
 
   export const getViewDecay = (state: GameState): number => {
-    // Base decay of 500/sec to help balance view accumulation
-    let total = 500;
+    // Base decay of 1000/sec to help balance view accumulation
+    let total = 1000;
     let multiplier = 1;
 
     UPGRADES.forEach((upgrade) => {
