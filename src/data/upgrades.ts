@@ -335,7 +335,6 @@ export const UPGRADES: Upgrade[] = [
     effect: { type: "viewReduction", amount: 0.06 },
     icon: "🕸️",
     maxQuantity: 3,
-    maxQuantity: 1,
   },
   {
     id: "aba-overbilling",
@@ -466,7 +465,6 @@ export const UPGRADES: Upgrade[] = [
     effect: { type: "viewReduction", amount: 0.06 },
     icon: "🌍",
     maxQuantity: 3,
-    maxQuantity: 1,
   },
 
   // ============================================
@@ -539,7 +537,6 @@ export const UPGRADES: Upgrade[] = [
     effect: { type: "viewReduction", amount: 0.08 },
     icon: "🤐",
     maxQuantity: 3,
-    maxQuantity: 1,
   },
   {
     id: "legislative-capture",
@@ -623,7 +620,6 @@ export const UPGRADES: Upgrade[] = [
     effect: { type: "viewReduction", amount: 0.06 },
     icon: "⭐",
     maxQuantity: 3,
-    maxQuantity: 1,
   },
 
   // ============================================
@@ -662,7 +658,6 @@ export const UPGRADES: Upgrade[] = [
     effect: { type: "viewReduction", amount: 0.10 },
     icon: "🎩",
     maxQuantity: 3,
-    maxQuantity: 1,
   },
   {
     id: "media-fixer",
@@ -758,7 +753,6 @@ export const UPGRADES: Upgrade[] = [
     effect: { type: "viewReduction", amount: 0.12 },
     icon: "🇨🇭",
     maxQuantity: 3,
-    maxQuantity: 1,
   },
 
   // ============================================
@@ -992,7 +986,6 @@ export const UPGRADES: Upgrade[] = [
     effect: { type: "viewReduction", amount: 0.15 },
     icon: "📡",
     maxQuantity: 3,
-    maxQuantity: 1,
   },
   {
     id: "federal-appointment",
@@ -1079,7 +1072,6 @@ export const UPGRADES: Upgrade[] = [
     effect: { type: "viewReduction", amount: 0.08 },
     icon: "📰",
     maxQuantity: 3,
-    maxQuantity: 1,
   },
   {
     id: "slush-fund",
