@@ -477,8 +477,11 @@ export const useGameStore = create<GameStore>()(
             
             // When filming completes, trigger segment upload!
             // View spike scales with progress (bigger target = more viral)
+            // Base: 200K early game → 2M endgame (prevents early game wipe)
             if (nickFilmingProgress >= 100) {
-              filmingViewSpike = 2_000_000 * penaltyScale; // +2M views (scaled)
+              const progressRatio = GameStore.getProgressRatio(s);
+              const baseFilmingSpike = 200_000 + (1_800_000 * progressRatio);
+              filmingViewSpike = baseFilmingSpike * penaltyScale;
               nickFilmingProgress = 0; // Reset for next segment
             }
           } else {

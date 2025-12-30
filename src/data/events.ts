@@ -481,7 +481,7 @@ export const POLITICAL_EVENTS: PoliticalEvent[] = [
     id: "surprise-inspection",
     title: "Surprise Inspection",
     description: "Inspectors on-site - act normal",
-    effect: { type: "investigation", incomeMultiplier: 0.2, viewGain: 300_000 },
+    effect: { type: "investigation", incomeMultiplier: 0.2, viewGain: 50_000 },
     duration: 20,
     icon: "🔍",
     tier: 1,
