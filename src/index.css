@@ -1,62 +1,328 @@
 @import "tailwindcss";
 
 @theme {
-  --font-mono: "Courier New", Courier, monospace;
-  --font-display: "Impact", "Arial Black", sans-serif;
-  
+  /* Typography */
+  --font-display: "Bebas Neue", "Impact", sans-serif;
+  --font-serif: "Source Serif 4", Georgia, serif;
+  --font-mono: "JetBrains Mono", "Courier New", monospace;
+
+  /* Primary Background Colors - Deep noir ink */
+  --color-bg-primary: #0c0f14;
+  --color-bg-card: #141820;
+  --color-bg-elevated: #1a1f2a;
+
+  /* Accent Colors - Government/corruption theme */
+  --color-corruption: #c4a44b;
+  --color-corruption-dim: #8b7635;
+  --color-danger: #8b2f35;
+  --color-danger-bright: #b93b42;
+  --color-viral: #d4451c;
+  --color-viral-bright: #e85a2c;
+  --color-money: #c9a227;
+  --color-money-bright: #e5b82a;
+
+  /* Text Colors - Yellowed paper aesthetic */
+  --color-text-primary: #e8dfd0;
+  --color-text-secondary: #b8a890;
+  --color-text-muted: #6b7280;
+  --color-text-dim: #4a5060;
+
+  /* Border Colors */
+  --color-border-card: #2a3040;
+  --color-border-highlight: #3d4555;
+
+  /* Legacy colors for compatibility */
   --color-fraud-green: #2d5a27;
   --color-fraud-green-dark: #1a3518;
   --color-manila: #f5e6c8;
   --color-manila-dark: #d4c4a8;
-  --color-suspicion-red: #dc2626;
-  --color-suspicion-orange: #ea580c;
-  --color-money-gold: #fbbf24;
+  --color-suspicion-red: #8b2f35;
+  --color-suspicion-orange: #d4451c;
+  --color-money-gold: #c9a227;
 }
 
+/* ===== KEYFRAME ANIMATIONS ===== */
+
 @keyframes stamp {
-  0% { transform: scale(1.3) rotate(-5deg); opacity: 0.8; }
-  50% { transform: scale(0.95) rotate(2deg); }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  0% {
+    transform: scale(1.3) rotate(-5deg);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(0.95) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes stamp-thunk {
+  0% {
+    transform: scale(1.2) rotate(-3deg) translateY(-20px);
+  }
+  60% {
+    transform: scale(0.92) rotate(1deg) translateY(2px);
+  }
+  80% {
+    transform: scale(1.02) rotate(-0.5deg) translateY(-1px);
+  }
+  100% {
+    transform: scale(1) rotate(0deg) translateY(0);
+  }
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px) rotate(-1deg); }
-  75% { transform: translateX(5px) rotate(1deg); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px) rotate(-1deg);
+  }
+  75% {
+    transform: translateX(5px) rotate(1deg);
+  }
 }
 
 @keyframes pulse-money {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 @keyframes float-up {
-  0% { opacity: 1; transform: translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateY(-60px) scale(1.2); }
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(1.2);
+  }
 }
 
 @keyframes ticker {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 @keyframes nick-walking {
-  0%, 100% { transform: translateX(0) scaleX(1); }
-  50% { transform: translateX(20px) scaleX(1); }
+  0%,
+  100% {
+    transform: translateX(0) scaleX(1);
+  }
+  50% {
+    transform: translateX(20px) scaleX(1);
+  }
 }
 
 @keyframes camera-flash {
-  0%, 100% { opacity: 0; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @keyframes suspicion-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
-  50% { box-shadow: 0 0 20px 10px rgba(220, 38, 38, 0.2); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(139, 47, 53, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(139, 47, 53, 0.2);
+  }
 }
+
+@keyframes golden-float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-10px);
+  }
+}
+
+@keyframes golden-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes screen-shake {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+  10% {
+    transform: translateX(-3px) translateY(2px);
+  }
+  20% {
+    transform: translateX(3px) translateY(-2px);
+  }
+  30% {
+    transform: translateX(-2px) translateY(1px);
+  }
+  40% {
+    transform: translateX(2px) translateY(-1px);
+  }
+  50% {
+    transform: translateX(-1px) translateY(2px);
+  }
+  60% {
+    transform: translateX(1px) translateY(-2px);
+  }
+  70% {
+    transform: translateX(-2px) translateY(1px);
+  }
+  80% {
+    transform: translateX(2px) translateY(-1px);
+  }
+  90% {
+    transform: translateX(-1px) translateY(1px);
+  }
+}
+
+@keyframes confetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes particle-burst {
+  0% {
+    transform: scale(0) translate(0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translate(var(--tx), var(--ty));
+    opacity: 0;
+  }
+}
+
+@keyframes ink-splatter {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+@keyframes warning-flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes slide-in-up {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(196, 164, 75, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(196, 164, 75, 0.6);
+  }
+}
+
+@keyframes emergency-strobe {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes static-noise {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+/* ===== ANIMATION CLASSES ===== */
 
 .animate-stamp {
   animation: stamp 0.15s ease-out;
+}
+
+.animate-stamp-thunk {
+  animation: stamp-thunk 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .animate-shake {
@@ -87,40 +353,371 @@
   animation: suspicion-pulse 2s ease-in-out infinite;
 }
 
+.animate-golden-float {
+  animation: golden-float 1s ease-in-out infinite;
+}
+
+.animate-golden-pulse {
+  animation: golden-pulse 0.5s ease-in-out infinite;
+}
+
+.animate-screen-shake {
+  animation: screen-shake 0.3s ease-in-out;
+}
+
+.animate-confetti {
+  animation: confetti 1s ease-out forwards;
+}
+
+.animate-particle-burst {
+  animation: particle-burst 0.6s ease-out forwards;
+}
+
+.animate-ink-splatter {
+  animation: ink-splatter 0.4s ease-out forwards;
+}
+
+.animate-warning-flash {
+  animation: warning-flash 0.5s ease-in-out infinite;
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+.glow-affordable {
+  animation: glow-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(196, 164, 75, 0.4);
+}
+
+.glow-danger {
+  box-shadow: 0 0 20px rgba(139, 47, 53, 0.5);
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* ===== BASE STYLES ===== */
+
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+  background: var(--color-bg-primary);
+  font-family: var(--font-serif);
+  color: var(--color-text-primary);
 }
+
+/* Subtle scan-line overlay for CRT effect */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* ===== TEXTURE CLASSES ===== */
 
 /* Paper texture overlay */
 .paper-texture {
-  background-image: 
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.03) 2px,
-      rgba(0,0,0,0.03) 4px
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* Aged paper texture */
+.paper-aged {
+  background: radial-gradient(
+      ellipse at 20% 20%,
+      rgba(232, 223, 208, 0.05) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 80% 80%,
+      rgba(196, 164, 75, 0.03) 0%,
+      transparent 50%
     );
 }
 
-/* Stamp button styling */
+/* Document grid pattern */
+.doc-grid {
+  background-image: linear-gradient(rgba(42, 48, 64, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42, 48, 64, 0.3) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Classified stamp watermark */
+.classified-watermark::after {
+  content: "CLASSIFIED";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  font-family: var(--font-display);
+  font-size: 8rem;
+  color: rgba(139, 47, 53, 0.05);
+  pointer-events: none;
+  white-space: nowrap;
+  letter-spacing: 0.2em;
+}
+
+/* ===== CARD STYLES ===== */
+
+.card-noir {
+  background: linear-gradient(
+    145deg,
+    var(--color-bg-card),
+    var(--color-bg-primary)
+  );
+  border: 1px solid var(--color-border-card);
+  border-radius: 0.75rem;
+}
+
+.card-elevated {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-highlight);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.card-document {
+  background: linear-gradient(
+    145deg,
+    rgba(26, 31, 42, 0.95),
+    rgba(12, 15, 20, 0.98)
+  );
+  border: 2px solid var(--color-border-card);
+  border-top-color: var(--color-border-highlight);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ===== STAMP BUTTON STYLING ===== */
+
 .stamp-button {
-  background: linear-gradient(145deg, #dc2626, #991b1b);
-  box-shadow: 
-    0 6px 0 #7f1d1d,
-    0 8px 20px rgba(0,0,0,0.4);
+  background: linear-gradient(
+    145deg,
+    var(--color-danger-bright),
+    var(--color-danger)
+  );
+  box-shadow: 0 8px 0 #5c1f24, 0 12px 30px rgba(0, 0, 0, 0.5),
+    inset 0 2px 0 rgba(255, 255, 255, 0.1);
   transition: all 0.1s ease;
+  border: 3px solid #5c1f24;
+  position: relative;
+}
+
+.stamp-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    145deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 60%
+  );
+  border-radius: inherit;
 }
 
 .stamp-button:active {
-  transform: translateY(4px);
-  box-shadow: 
-    0 2px 0 #7f1d1d,
-    0 4px 10px rgba(0,0,0,0.3);
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 #5c1f24, 0 4px 10px rgba(0, 0, 0, 0.3),
+    inset 0 2px 0 rgba(255, 255, 255, 0.1);
 }
 
-.stamp-button:hover {
-  background: linear-gradient(145deg, #ef4444, #b91c1c);
+.stamp-button:hover:not(:active) {
+  background: linear-gradient(145deg, #c94550, var(--color-danger-bright));
+  box-shadow: 0 8px 0 #5c1f24, 0 15px 40px rgba(139, 47, 53, 0.4),
+    inset 0 2px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* ===== CUSTOM SCROLLBAR ===== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-highlight);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-corruption-dim);
+}
+
+/* ===== EMERGENCY/WARNING STYLES ===== */
+
+.emergency-banner {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-danger) 0px,
+    var(--color-danger) 10px,
+    #5c1f24 10px,
+    #5c1f24 20px
+  );
+  background-size: 28px 28px;
+}
+
+.hazard-border {
+  border-image: repeating-linear-gradient(
+      45deg,
+      var(--color-viral) 0px,
+      var(--color-viral) 10px,
+      var(--color-bg-primary) 10px,
+      var(--color-bg-primary) 20px
+    )
+    4;
+}
+
+/* ===== FOLDER TAB STYLE ===== */
+
+.folder-tab {
+  background: var(--color-bg-card);
+  border: 2px solid var(--color-border-card);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  position: relative;
+}
+
+.folder-tab.active {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-corruption);
+}
+
+.folder-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-bg-elevated);
+}
+
+/* ===== BROADCAST/TV STYLES ===== */
+
+.broadcast-banner {
+  background: linear-gradient(
+    90deg,
+    var(--color-danger) 0%,
+    var(--color-danger-bright) 50%,
+    var(--color-danger) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 4px 20px rgba(139, 47, 53, 0.5);
+}
+
+.live-indicator {
+  background: var(--color-danger-bright);
+  box-shadow: 0 0 10px var(--color-danger-bright);
+}
+
+.live-indicator::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: inherit;
+  animation: warning-flash 1s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+/* ===== AI IMAGE POST-PROCESSING ===== */
+/* Light blur/pixelation to hide AI artifacts */
+
+/* Base class for all AI-generated images */
+.ai-image {
+  image-rendering: auto;
+  filter: blur(0.5px);
+}
+
+/* Surveillance/CCTV aesthetic - blur to hide artifacts */
+.ai-image-surveillance {
+  filter: blur(0.8px);
+  image-rendering: pixelated;
+}
+
+/* Zone images - light blur */
+.ai-image-zone {
+  filter: blur(0.6px);
+}
+
+/* Character portraits - light blur */
+.ai-image-character {
+  filter: blur(0.7px);
+  border-radius: inherit;
+}
+
+/* Screen backgrounds - light blur */
+.ai-image-screen {
+  filter: blur(0.8px);
+}
+
+/* Upgrade icons - light blur */
+.ai-image-upgrade {
+  filter: blur(0.5px);
+}
+
+/* Heavy blur for intentionally hiding details */
+.ai-image-distorted {
+  filter: blur(2px);
+}
+
+.ai-image-duotone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom right,
+    rgba(196, 164, 75, 0.3),
+    rgba(12, 15, 20, 0.5)
+  );
+  pointer-events: none;
+  mix-blend-mode: color;
 }

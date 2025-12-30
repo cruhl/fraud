@@ -7,9 +7,16 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:assets": "tsx scripts/generate-assets.ts",
+    "generate:screens": "tsx scripts/generate-assets.ts screens",
+    "generate:characters": "tsx scripts/generate-assets.ts characters",
+    "generate:zones": "tsx scripts/generate-assets.ts zones",
+    "generate:upgrades": "tsx scripts/generate-assets.ts upgrades"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.8.1",
+    "dotenv": "^17.2.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "zustand": "^5.0.9"
@@ -26,6 +33,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "tailwindcss": "^4.1.18",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4"

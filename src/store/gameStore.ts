@@ -2,8 +2,39 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { UPGRADES, type Upgrade } from "~/data/upgrades";
 import { ZONES, type Zone } from "~/data/zones";
-import { POLITICAL_EVENTS, type PoliticalEvent, getRandomEvent } from "~/data/events";
-import { ACHIEVEMENTS, type Achievement } from "~/data/achievements";
+import {
+  POLITICAL_EVENTS,
+  type PoliticalEvent,
+  getRandomEvent,
+} from "~/data/events";
+import { ACHIEVEMENTS } from "~/data/achievements";
+
+// Define nested types first
+export type ThreatLevel =
+  | "safe"
+  | "local-blogger"
+  | "gaining-traction"
+  | "regional-news"
+  | "national-story"
+  | "viral"
+  | "the-video";
+
+export type GoldenClaim = {
+  id: number;
+  type: "money" | "views" | "discount";
+  x: number;
+  y: number;
+  expiresAt: number;
+};
+
+export type LifetimeStats = {
+  totalMoneyEarned: number;
+  totalClaimsFiled: number;
+  totalGoldenClaimsCaught: number;
+  highestViralViews: number;
+  fastestWinTime: number | null;
+  timesArrested: number;
+};
 
 export type GameState = {
   // Core stats
@@ -14,7 +45,8 @@ export type GameState = {
   // Nick Shirley viral system (replaces suspicion)
   viralViews: number;
   nickShirleyLocation: string | null;
-  threatLevel: GameState.ThreatLevel;
+  threatLevel: ThreatLevel;
+  maxThreatLevelReached: ThreatLevel;
 
   // Game state
   isGameOver: boolean;
@@ -40,20 +72,24 @@ export type GameState = {
   totalArrestCount: number;
   prestigeBonuses: string[];
 
+  // Golden Claims
+  goldenClaim: GoldenClaim | null;
+  lastGoldenClaimTime: number;
+  discountEndTime: number | null;
+
+  // Lifetime Stats
+  lifetimeStats: LifetimeStats;
+
   // Timing
   lastTick: number;
   gameStartTime: number;
 };
 
+// Re-export for backwards compatibility
 export namespace GameState {
-  export type ThreatLevel =
-    | "safe"
-    | "local-blogger"
-    | "gaining-traction"
-    | "regional-news"
-    | "national-story"
-    | "viral"
-    | "the-video";
+  export type ThreatLevel = import("~/store/gameStore").ThreatLevel;
+  export type GoldenClaim = import("~/store/gameStore").GoldenClaim;
+  export type LifetimeStats = import("~/store/gameStore").LifetimeStats;
 }
 
 export type GameActions = {
@@ -65,9 +101,21 @@ export type GameActions = {
   triggerEvent: (event: PoliticalEvent) => void;
   reset: () => void;
   prestige: () => void;
+  clickGoldenClaim: () => void;
+  dismissGoldenClaim: () => void;
+  unlockTrialAchievement: (type: "arrested" | "acquitted" | "maxSentence") => void;
 };
 
 export type GameStore = GameState & GameActions;
+
+const INITIAL_LIFETIME_STATS: GameState.LifetimeStats = {
+  totalMoneyEarned: 0,
+  totalClaimsFiled: 0,
+  totalGoldenClaimsCaught: 0,
+  highestViralViews: 0,
+  fastestWinTime: null,
+  timesArrested: 0,
+};
 
 const INITIAL_STATE: GameState = {
   money: 0,
@@ -76,6 +124,7 @@ const INITIAL_STATE: GameState = {
   viralViews: 0,
   nickShirleyLocation: null,
   threatLevel: "safe",
+  maxThreatLevelReached: "safe",
   isGameOver: false,
   isVictory: false,
   isArrested: false,
@@ -88,6 +137,10 @@ const INITIAL_STATE: GameState = {
   unlockedAchievements: [],
   totalArrestCount: 0,
   prestigeBonuses: [],
+  goldenClaim: null,
+  lastGoldenClaimTime: 0,
+  discountEndTime: null,
+  lifetimeStats: INITIAL_LIFETIME_STATS,
   lastTick: Date.now(),
   gameStartTime: Date.now(),
 };
@@ -110,17 +163,49 @@ export const useGameStore = create<GameStore>()(
 
           const clickValue = GameStore.getClickValue(s);
           const viewsGain = GameStore.getViewsGain(s, zone);
+          const viewCap = GameStore.getViewCap(s);
           const newMoney = s.money + clickValue;
           const newTotal = s.totalEarned + clickValue;
-          const newViews = s.viralViews + viewsGain;
+          const newViews = Math.min(viewCap, s.viralViews + viewsGain);
           const newThreatLevel = GameStore.getThreatLevel(newViews);
 
           // Check achievements
           const newAchievements = [...s.unlockedAchievements];
           GameStore.checkAchievements(
-            { ...s, totalEarned: newTotal, viralViews: newViews, fakeClaims: s.fakeClaims + 1 },
+            {
+              ...s,
+              totalEarned: newTotal,
+              viralViews: newViews,
+              fakeClaims: s.fakeClaims + 1,
+            },
             newAchievements
           );
+
+          // Update lifetime stats (with defaults for old saves)
+          const currentStats = s.lifetimeStats ?? INITIAL_LIFETIME_STATS;
+          const lifetimeStats = {
+            ...currentStats,
+            totalMoneyEarned: (currentStats.totalMoneyEarned ?? 0) + clickValue,
+            totalClaimsFiled: (currentStats.totalClaimsFiled ?? 0) + 1,
+            highestViralViews: Math.max(
+              currentStats.highestViralViews ?? 0,
+              newViews
+            ),
+          };
+
+          const isNewVictory = !s.isVictory && newTotal >= TARGET_AMOUNT;
+          const gameTime = isNewVictory ? Date.now() - s.gameStartTime : null;
+
+          // Update fastest win time if this is a new victory
+          const updatedLifetimeStats =
+            isNewVictory && gameTime
+              ? {
+                  ...lifetimeStats,
+                  fastestWinTime: lifetimeStats?.fastestWinTime
+                    ? Math.min(lifetimeStats.fastestWinTime, gameTime)
+                    : gameTime,
+                }
+              : lifetimeStats;
 
           return {
             money: newMoney,
@@ -128,9 +213,14 @@ export const useGameStore = create<GameStore>()(
             fakeClaims: s.fakeClaims + 1,
             viralViews: newViews,
             threatLevel: newThreatLevel,
+            maxThreatLevelReached: GameStore.maxThreatLevel(
+              s.maxThreatLevelReached,
+              newThreatLevel
+            ),
             isGameOver: newViews >= VIRAL_THRESHOLD,
             isVictory: newTotal >= TARGET_AMOUNT,
             unlockedAchievements: newAchievements,
+            lifetimeStats: updatedLifetimeStats,
           };
         });
       },
@@ -142,7 +232,10 @@ export const useGameStore = create<GameStore>()(
         if (!state.unlockedZones.includes(upgrade.zone)) return;
 
         const owned = state.ownedUpgrades[upgradeId] ?? 0;
-        const cost = GameStore.getUpgradeCost(upgrade, owned);
+        const discountActive = state.discountEndTime
+          ? Date.now() < state.discountEndTime
+          : false;
+        const cost = GameStore.getUpgradeCost(upgrade, owned, discountActive);
 
         if (state.money < cost || state.isGameOver || state.isVictory) return;
 
@@ -183,10 +276,16 @@ export const useGameStore = create<GameStore>()(
           // Check zone achievements
           ACHIEVEMENTS.forEach((ach) => {
             if (s.unlockedAchievements.includes(ach.id)) return;
-            if (ach.condition.type === "zoneUnlocked" && ach.condition.zone === zoneId) {
+            if (
+              ach.condition.type === "zoneUnlocked" &&
+              ach.condition.zone === zoneId
+            ) {
               newAchievements.push(ach.id);
             }
-            if (ach.condition.type === "allZonesUnlocked" && newZones.length === ZONES.length) {
+            if (
+              ach.condition.type === "allZonesUnlocked" &&
+              newZones.length === ZONES.length
+            ) {
               newAchievements.push(ach.id);
             }
           });
@@ -232,38 +331,103 @@ export const useGameStore = create<GameStore>()(
           // Calculate passive income
           const passiveIncome = GameStore.getPassiveIncome(s);
           const viewDecay = GameStore.getViewDecay(s);
-          const passiveGain = passiveIncome * delta;
 
-          // Event modifiers
-          let viewMultiplier = 1;
-          if (activeEvent?.effect.type === "viewMultiplier") {
-            viewMultiplier = activeEvent.effect.amount;
-          }
-
-          // Passive income generates views too
-          const passiveViewGain = passiveIncome > 0 ? passiveIncome * 10 * delta * viewMultiplier : 0;
-          const netViewChange = passiveViewGain - viewDecay * delta;
-          const newViews = Math.max(0, s.viralViews + netViewChange);
-          const newThreatLevel = GameStore.getThreatLevel(newViews);
-          const newMoney = s.money + passiveGain;
-          const newTotal = s.totalEarned + passiveGain;
-
-          // Random event trigger (1% chance per tick)
-          if (!activeEvent && Math.random() < 0.001) {
+          // Random event trigger (1.5% chance per tick for more dynamic gameplay)
+          let eventViewGain = 0;
+          if (!activeEvent && Math.random() < 0.0015) {
             const newEvent = getRandomEvent();
             activeEvent = newEvent;
             eventEndTime = now + newEvent.duration * 1000;
             if (newEvent.effect.type === "pauseFraud") {
               isPaused = true;
             }
+            // Apply immediate viewGain effect
+            if (newEvent.effect.type === "viewGain") {
+              eventViewGain = newEvent.effect.amount;
+            }
           }
+
+          // Event modifiers
+          let viewMultiplier = 1;
+          let incomeMultiplier = 1;
+          if (activeEvent?.effect.type === "viewMultiplier") {
+            viewMultiplier = activeEvent.effect.amount;
+          }
+          if (activeEvent?.effect.type === "incomeMultiplier") {
+            incomeMultiplier = activeEvent.effect.amount;
+          }
+
+          const passiveGain = passiveIncome * delta * incomeMultiplier;
+
+          // Passive income generates views (0.3x rate for balanced late-game)
+          const passiveViewGain =
+            passiveIncome > 0 ? passiveIncome * 0.3 * delta * viewMultiplier : 0;
+          const netViewChange = passiveViewGain - viewDecay * delta + eventViewGain;
+          const viewCap = GameStore.getViewCap(s);
+          const newViews = Math.min(
+            viewCap,
+            Math.max(0, s.viralViews + netViewChange)
+          );
+          const newThreatLevel = GameStore.getThreatLevel(newViews);
+          const newMoney = s.money + passiveGain;
+          const newTotal = s.totalEarned + passiveGain;
 
           // Random Nick Shirley location
           let nickLocation = s.nickShirleyLocation;
           if (Math.random() < 0.01) {
-            const zones = ["daycare", "housing", "autism", "medicaid", null];
-            nickLocation = zones[Math.floor(Math.random() * zones.length)];
+            // Include all zones + null (not visible)
+            const zoneIds = ZONES.map((z) => z.id);
+            const locations: (string | null)[] = [...zoneIds, null];
+            nickLocation = locations[Math.floor(Math.random() * locations.length)];
           }
+
+          // Random golden claim spawn (every 30-90 seconds)
+          let goldenClaim = s.goldenClaim;
+          const timeSinceLastGolden = now - s.lastGoldenClaimTime;
+          const minSpawnTime = 30_000;
+          const maxSpawnTime = 90_000;
+
+          // Expire existing golden claim
+          if (goldenClaim && now > goldenClaim.expiresAt) {
+            goldenClaim = null;
+          }
+
+          // Spawn new golden claim (3% chance per tick after min time)
+          if (
+            !goldenClaim &&
+            timeSinceLastGolden >= minSpawnTime &&
+            Math.random() < 0.03
+          ) {
+            const types: GameState.GoldenClaim["type"][] = [
+              "money",
+              "views",
+              "discount",
+            ];
+            // Duration scales with threat level: 6s base, +1s if safe, +0.5s if local-blogger
+            let duration = 6000;
+            if (newThreatLevel === "safe") duration += 1000;
+            else if (newThreatLevel === "local-blogger") duration += 500;
+
+            goldenClaim = {
+              id: now,
+              type: types[Math.floor(Math.random() * types.length)],
+              x: Math.random() * 80 + 10, // 10-90% from left
+              y: Math.random() * 60 + 20, // 20-80% from top
+              expiresAt: now + duration,
+            };
+          }
+
+          // Update lifetime stats (with defaults for old saves)
+          const currentTickStats = s.lifetimeStats ?? INITIAL_LIFETIME_STATS;
+          const lifetimeStats = {
+            ...currentTickStats,
+            totalMoneyEarned:
+              (currentTickStats.totalMoneyEarned ?? 0) + passiveGain,
+            highestViralViews: Math.max(
+              currentTickStats.highestViralViews ?? 0,
+              newViews
+            ),
+          };
 
           // Check achievements
           const newAchievements = [...s.unlockedAchievements];
@@ -277,6 +441,10 @@ export const useGameStore = create<GameStore>()(
             totalEarned: newTotal,
             viralViews: newViews,
             threatLevel: newThreatLevel,
+            maxThreatLevelReached: GameStore.maxThreatLevel(
+              s.maxThreatLevelReached,
+              newThreatLevel
+            ),
             lastTick: now,
             isGameOver: newViews >= VIRAL_THRESHOLD,
             isVictory: newTotal >= TARGET_AMOUNT,
@@ -285,6 +453,12 @@ export const useGameStore = create<GameStore>()(
             isPaused,
             nickShirleyLocation: nickLocation,
             unlockedAchievements: newAchievements,
+            goldenClaim,
+            lastGoldenClaimTime:
+              goldenClaim && goldenClaim.id === now
+                ? now
+                : s.lastGoldenClaimTime,
+            lifetimeStats,
           };
         });
       },
@@ -322,6 +496,12 @@ export const useGameStore = create<GameStore>()(
 
       prestige: () => {
         const state = get();
+        const currentPrestigeStats =
+          state.lifetimeStats ?? INITIAL_LIFETIME_STATS;
+        const newStats = {
+          ...currentPrestigeStats,
+          timesArrested: (currentPrestigeStats.timesArrested ?? 0) + 1,
+        };
         set({
           ...INITIAL_STATE,
           lastTick: Date.now(),
@@ -329,6 +509,81 @@ export const useGameStore = create<GameStore>()(
           totalArrestCount: state.totalArrestCount + 1,
           prestigeBonuses: state.prestigeBonuses,
           unlockedAchievements: state.unlockedAchievements,
+          lifetimeStats: newStats,
+        });
+      },
+
+      clickGoldenClaim: () => {
+        const state = get();
+        if (!state.goldenClaim || state.isGameOver || state.isVictory) return;
+
+        const now = Date.now();
+        if (now > state.goldenClaim.expiresAt) return;
+
+        set((s) => {
+          const claim = s.goldenClaim!;
+          let moneyBonus = 0;
+          let viewsReduction = 0;
+          let discountEndTime = s.discountEndTime;
+
+          switch (claim.type) {
+            case "money":
+              // 25x click value + 2% of total earned (min $1000)
+              const clickBonus = GameStore.getClickValue(s) * 25;
+              const percentBonus = Math.max(1000, s.totalEarned * 0.02);
+              moneyBonus = clickBonus + percentBonus;
+              break;
+            case "views":
+              // -5% of current views (min 10K, max 500K)
+              viewsReduction = Math.min(
+                500_000,
+                Math.max(10_000, s.viralViews * 0.05)
+              );
+              break;
+            case "discount":
+              // 25% off upgrades for 30 seconds
+              discountEndTime = now + 30_000;
+              break;
+          }
+
+          const newMoney = s.money + moneyBonus;
+          const newViews = Math.max(0, s.viralViews - viewsReduction);
+          const currentGoldenStats = s.lifetimeStats ?? INITIAL_LIFETIME_STATS;
+          const newStats = {
+            ...currentGoldenStats,
+            totalGoldenClaimsCaught:
+              (currentGoldenStats.totalGoldenClaimsCaught ?? 0) + 1,
+          };
+
+          return {
+            goldenClaim: null,
+            money: newMoney,
+            totalEarned: s.totalEarned + moneyBonus,
+            viralViews: newViews,
+            threatLevel: GameStore.getThreatLevel(newViews),
+            lifetimeStats: newStats,
+            discountEndTime,
+          };
+        });
+      },
+
+      dismissGoldenClaim: () => {
+        set({ goldenClaim: null });
+      },
+
+      unlockTrialAchievement: (type: "arrested" | "acquitted" | "maxSentence") => {
+        set((s) => {
+          const newAchievements = [...s.unlockedAchievements];
+          
+          // Find achievement with matching condition type
+          ACHIEVEMENTS.forEach((ach) => {
+            if (newAchievements.includes(ach.id)) return;
+            if (ach.condition.type === type) {
+              newAchievements.push(ach.id);
+            }
+          });
+          
+          return { unlockedAchievements: newAchievements };
         });
       },
     }),
@@ -338,6 +593,7 @@ export const useGameStore = create<GameStore>()(
         unlockedAchievements: state.unlockedAchievements,
         totalArrestCount: state.totalArrestCount,
         prestigeBonuses: state.prestigeBonuses,
+        lifetimeStats: state.lifetimeStats,
       }),
     }
   )
@@ -366,10 +622,12 @@ export namespace GameStore {
       }
     });
 
-    // Prestige bonuses
-    const prestigeMultiplier = 1 + state.totalArrestCount * 0.1;
+    const prestigeMultiplier = getPrestigeMultiplier(state.totalArrestCount);
 
-    return Math.floor(base * multiplier * prestigeMultiplier);
+    // Victory bonus: +20% income if player has won before
+    const victoryBonus = state.lifetimeStats?.fastestWinTime ? 1.2 : 1;
+
+    return Math.floor(base * multiplier * prestigeMultiplier * victoryBonus);
   };
 
   export const getPassiveIncome = (state: GameState): number => {
@@ -385,14 +643,16 @@ export namespace GameStore {
       }
     });
 
-    // Prestige bonuses
-    const prestigeMultiplier = 1 + state.totalArrestCount * 0.1;
+    const prestigeMultiplier = getPrestigeMultiplier(state.totalArrestCount);
 
-    return total * prestigeMultiplier;
+    // Victory bonus: +20% income if player has won before
+    const victoryBonus = state.lifetimeStats?.fastestWinTime ? 1.2 : 1;
+
+    return total * prestigeMultiplier * victoryBonus;
   };
 
   export const getViewsGain = (state: GameState, zone: Zone): number => {
-    let base = zone.viewsPerClick;
+    const base = zone.viewsPerClick;
     let multiplier = 1;
 
     // Reduction from upgrades
@@ -412,14 +672,16 @@ export namespace GameStore {
 
     // Nick Shirley is in your zone = more views!
     if (state.nickShirleyLocation === zone.id) {
-      multiplier *= 2;
+      multiplier *= 1.5;
     }
 
     return Math.floor(base * multiplier);
   };
 
   export const getViewDecay = (state: GameState): number => {
-    let total = 0;
+    // Base decay of 200/sec to reward patience
+    let total = 200;
+    let multiplier = 1;
 
     UPGRADES.forEach((upgrade) => {
       const owned = state.ownedUpgrades[upgrade.id] ?? 0;
@@ -428,13 +690,35 @@ export namespace GameStore {
       if (upgrade.effect.type === "viewDecay") {
         total += upgrade.effect.amount * owned;
       }
+      if (upgrade.effect.type === "viewDecayMultiplier") {
+        // Fixed: multiply properly instead of multiplying by (amount * owned)
+        multiplier *= Math.pow(upgrade.effect.amount, owned);
+      }
     });
 
-    return total;
+    // Prestige bonus: +5% view decay per arrest
+    const prestigeDecayBonus = 1 + state.totalArrestCount * 0.05;
+
+    return total * multiplier * prestigeDecayBonus;
+  };
+
+  export const getViewCap = (state: GameState): number => {
+    let cap = VIRAL_THRESHOLD; // Default is the game over threshold
+
+    UPGRADES.forEach((upgrade) => {
+      const owned = state.ownedUpgrades[upgrade.id] ?? 0;
+      if (owned === 0) return;
+
+      if (upgrade.effect.type === "viewCap") {
+        cap = Math.min(cap, upgrade.effect.amount);
+      }
+    });
+
+    return cap;
   };
 
   export const getThreatLevel = (views: number): GameState.ThreatLevel => {
-    if (views >= 100_000_000) return "the-video";
+    if (views >= 95_000_000) return "the-video";
     if (views >= 50_000_000) return "viral";
     if (views >= 10_000_000) return "national-story";
     if (views >= 1_000_000) return "regional-news";
@@ -442,6 +726,26 @@ export namespace GameStore {
     if (views >= 10_000) return "local-blogger";
     return "safe";
   };
+
+  export const THREAT_LEVEL_ORDER: GameState.ThreatLevel[] = [
+    "safe",
+    "local-blogger",
+    "gaining-traction",
+    "regional-news",
+    "national-story",
+    "viral",
+    "the-video",
+  ];
+
+  export const compareThreatLevel = (
+    a: GameState.ThreatLevel,
+    b: GameState.ThreatLevel
+  ): number => THREAT_LEVEL_ORDER.indexOf(a) - THREAT_LEVEL_ORDER.indexOf(b);
+
+  export const maxThreatLevel = (
+    a: GameState.ThreatLevel,
+    b: GameState.ThreatLevel
+  ): GameState.ThreatLevel => (compareThreatLevel(a, b) >= 0 ? a : b);
 
   export const getThreatMessage = (level: GameState.ThreatLevel): string => {
     switch (level) {
@@ -462,10 +766,21 @@ export namespace GameStore {
     }
   };
 
-  export const getUpgradeCost = (upgrade: Upgrade, owned: number): number =>
-    Math.floor(upgrade.baseCost * Math.pow(upgrade.costMultiplier, owned));
+  export const getUpgradeCost = (
+    upgrade: Upgrade,
+    owned: number,
+    discountActive = false
+  ): number => {
+    const baseCost = Math.floor(
+      upgrade.baseCost * Math.pow(upgrade.costMultiplier, owned)
+    );
+    return discountActive ? Math.floor(baseCost * 0.75) : baseCost;
+  };
 
-  export const checkAchievements = (state: GameState, achievements: string[]): void => {
+  export const checkAchievements = (
+    state: GameState,
+    achievements: string[]
+  ): void => {
     ACHIEVEMENTS.forEach((ach) => {
       if (achievements.includes(ach.id)) return;
 
@@ -486,6 +801,41 @@ export namespace GameStore {
         case "allZonesUnlocked":
           earned = state.unlockedZones.length === ZONES.length;
           break;
+        case "goldenClaimsCaught":
+          earned =
+            (state.lifetimeStats?.totalGoldenClaimsCaught ?? 0) >=
+            ach.condition.amount;
+          break;
+        case "prestigeLevel":
+          earned = state.totalArrestCount >= ach.condition.level;
+          break;
+        case "speedWin":
+          // Check if player won and within time limit
+          if (state.isVictory && state.lifetimeStats?.fastestWinTime) {
+            earned =
+              state.lifetimeStats.fastestWinTime <= ach.condition.maxTimeMs;
+          }
+          break;
+        case "carefulWin":
+          // Check if player won without exceeding the max threat level
+          if (state.isVictory) {
+            const maxAllowedIndex = THREAT_LEVEL_ORDER.indexOf(
+              ach.condition.maxThreatLevel as ThreatLevel
+            );
+            const actualMaxIndex = THREAT_LEVEL_ORDER.indexOf(
+              state.maxThreatLevelReached
+            );
+            earned = actualMaxIndex <= maxAllowedIndex;
+          }
+          break;
+        case "prestigeEarned":
+          // Check if player has prestige and has earned enough in current run
+          earned =
+            state.totalArrestCount > 0 &&
+            state.totalEarned >= ach.condition.amount;
+          break;
+        // Note: "arrested", "acquitted", and "maxSentence" are handled 
+        // directly in Trial.tsx since they depend on trial outcomes
       }
 
       if (earned) achievements.push(ach.id);
@@ -503,9 +853,42 @@ export namespace GameStore {
   };
 
   export const formatMoney = (amount: number): string => {
-    if (amount >= 1_000_000_000) return "$" + (amount / 1_000_000_000).toFixed(2) + "B";
+    if (amount >= 1_000_000_000)
+      return "$" + (amount / 1_000_000_000).toFixed(2) + "B";
     if (amount >= 1_000_000) return "$" + (amount / 1_000_000).toFixed(2) + "M";
     if (amount >= 1_000) return "$" + (amount / 1_000).toFixed(2) + "K";
     return "$" + amount.toFixed(0);
+  };
+
+  export const formatTimeMs = (ms: number): string => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}m ${secs}s`;
+  };
+
+  // Tiered prestige bonuses: 15%, 12%, 10%, then 8% each
+  export const getPrestigeBonusPercent = (arrests: number): number => {
+    if (arrests === 0) return 0;
+    let bonus = 0;
+    for (let i = 1; i <= arrests; i++) {
+      if (i === 1) bonus += 15;
+      else if (i === 2) bonus += 12;
+      else if (i === 3) bonus += 10;
+      else bonus += 8;
+    }
+    return bonus;
+  };
+
+  export const getNextPrestigeBonusPercent = (arrests: number): number => {
+    if (arrests === 0) return 15;
+    if (arrests === 1) return 12;
+    if (arrests === 2) return 10;
+    return 8;
+  };
+
+  // Shared prestige multiplier (1 + bonus%)
+  export const getPrestigeMultiplier = (arrests: number): number => {
+    return 1 + getPrestigeBonusPercent(arrests) / 100;
   };
 }

@@ -1,5 +1,7 @@
+import { useCallback, useMemo } from "react";
 import { useGameStore, GameStore } from "~/store/gameStore";
 import { ZONES } from "~/data/zones";
+import { playSound } from "~/hooks/useAudio";
 
 export function MinneapolisMap() {
   const money = useGameStore((s) => s.money);
@@ -8,63 +10,85 @@ export function MinneapolisMap() {
   const setActiveZone = useGameStore((s) => s.setActiveZone);
   const unlockZone = useGameStore((s) => s.unlockZone);
   const nickShirleyLocation = useGameStore((s) => s.nickShirleyLocation);
-  const viralViews = useGameStore((s) => s.viralViews);
-  const threatLevel = useGameStore((s) => s.threatLevel);
 
-  // Zone positions on map (percentages)
-  const zonePositions: Record<string, { x: number; y: number; width: number; height: number }> = {
-    daycare: { x: 35, y: 30, width: 25, height: 30 },
-    housing: { x: 55, y: 25, width: 20, height: 25 },
-    autism: { x: 15, y: 55, width: 30, height: 25 },
-    medicaid: { x: 50, y: 55, width: 35, height: 30 },
-  };
+  const handleZoneClick = useCallback(
+    (zoneId: string, isUnlocked: boolean, canAfford: boolean) => {
+      if (isUnlocked) {
+        setActiveZone(zoneId);
+      } else if (canAfford) {
+        unlockZone(zoneId);
+        playSound("zoneUnlock");
+      }
+    },
+    [setActiveZone, unlockZone]
+  );
 
-  const isHighThreat = threatLevel === "viral" || threatLevel === "the-video";
+  const zonePositions: Record<string, MinneapolisMap.Position> = useMemo(
+    () => ({
+      daycare: { x: 35, y: 25 },
+      housing: { x: 65, y: 30 },
+      autism: { x: 25, y: 55 },
+      medicaid: { x: 75, y: 55 },
+      political: { x: 50, y: 75 },
+      endgame: { x: 50, y: 45 },
+    }),
+    []
+  );
 
   return (
-    <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-xl border border-gray-700 overflow-hidden">
-      {/* Grid background */}
-      <div
-        className="absolute inset-0 opacity-20"
+    <div 
+      className="relative h-80 rounded-lg overflow-hidden"
+      style={{
+        background: "var(--color-bg-primary)",
+        border: "2px solid var(--color-border-card)",
+      }}
+    >
+      {/* Crime scene aesthetic background */}
+      <div 
+        className="absolute inset-0 opacity-30"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+            radial-gradient(circle at 50% 45%, rgba(196, 164, 75, 0.15) 0%, transparent 40%),
+            linear-gradient(rgba(42, 48, 64, 0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(42, 48, 64, 0.3) 1px, transparent 1px)
           `,
-          backgroundSize: "40px 40px",
+          backgroundSize: "100% 100%, 30px 30px, 30px 30px",
         }}
       />
 
-      {/* Mississippi River (stylized) */}
-      <div
-        className="absolute w-4 bg-blue-900/50 blur-sm"
-        style={{
-          left: "78%",
-          top: 0,
-          bottom: 0,
-          transform: "skewX(-5deg)",
-        }}
-      />
+      {/* Investigation strings between zones */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20">
+        {unlockedZones.length > 1 && (
+          <>
+            {/* Draw connecting lines between unlocked zones */}
+            {unlockedZones.map((zoneId, i) => {
+              if (i === 0) return null;
+              const prevZoneId = unlockedZones[i - 1];
+              const pos1 = zonePositions[prevZoneId];
+              const pos2 = zonePositions[zoneId];
+              if (!pos1 || !pos2) return null;
+              return (
+                <line
+                  key={`${prevZoneId}-${zoneId}`}
+                  x1={`${pos1.x}%`}
+                  y1={`${pos1.y}%`}
+                  x2={`${pos2.x}%`}
+                  y2={`${pos2.y}%`}
+                  stroke="var(--color-corruption)"
+                  strokeWidth="2"
+                  strokeDasharray="5,5"
+                />
+              );
+            })}
+          </>
+        )}
+      </svg>
 
-      {/* Title */}
-      <div className="absolute top-2 left-3 text-xs font-mono text-gray-500">
-        MINNEAPOLIS FRAUD MAP
-      </div>
-
-      {/* Threat indicator */}
-      <div
-        className={`absolute top-2 right-3 text-xs font-mono px-2 py-0.5 rounded ${
-          isHighThreat
-            ? "bg-red-900 text-red-300 animate-pulse"
-            : "bg-gray-800 text-gray-400"
-        }`}
-      >
-        {GameStore.formatViews(viralViews)} views
-      </div>
-
-      {/* Zone areas */}
+      {/* Zone pins */}
       {ZONES.map((zone) => {
         const pos = zonePositions[zone.id];
+        if (!pos) return null;
+
         const isUnlocked = unlockedZones.includes(zone.id);
         const isActive = activeZone === zone.id;
         const canAfford = money >= zone.unlockCost;
@@ -73,101 +97,168 @@ export function MinneapolisMap() {
         return (
           <button
             key={zone.id}
-            onClick={() =>
-              isUnlocked ? setActiveZone(zone.id) : canAfford && unlockZone(zone.id)
-            }
+            onClick={() => handleZoneClick(zone.id, isUnlocked, canAfford)}
             disabled={!isUnlocked && !canAfford}
             className={`
-              absolute rounded-lg transition-all duration-300
-              flex flex-col items-center justify-center
-              ${isActive ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900" : ""}
-              ${!isUnlocked && !canAfford ? "opacity-30 cursor-not-allowed" : "hover:scale-105"}
-              ${isNickHere ? "animate-pulse" : ""}
+              absolute transition-all duration-200 group
+              ${isUnlocked ? "cursor-pointer" : canAfford ? "cursor-pointer" : "cursor-not-allowed"}
             `}
             style={{
               left: `${pos.x}%`,
               top: `${pos.y}%`,
-              width: `${pos.width}%`,
-              height: `${pos.height}%`,
-              backgroundColor: isUnlocked ? zone.color + "40" : "#1f2937",
-              borderWidth: "2px",
-              borderStyle: isUnlocked ? "solid" : "dashed",
-              borderColor: isUnlocked
-                ? isActive
-                  ? zone.color
-                  : zone.color + "80"
-                : canAfford
-                  ? "#4b5563"
-                  : "#374151",
+              transform: "translate(-50%, -50%)",
             }}
           >
-            {/* Nick Shirley camera icon */}
+            {/* Nick Shirley camera indicator */}
             {isNickHere && (
-              <div className="absolute -top-2 -right-2 text-lg z-10 animate-bounce">
-                📷
+              <div
+                className="absolute -top-8 left-1/2 -translate-x-1/2 animate-bounce z-20"
+                style={{
+                  filter: "drop-shadow(0 2px 8px rgba(139, 47, 53, 0.8))",
+                }}
+              >
+                <div className="relative">
+                  <span className="text-2xl">📷</span>
+                  <div 
+                    className="absolute inset-0 animate-ping rounded-full"
+                    style={{ background: "rgba(139, 47, 53, 0.5)" }}
+                  />
+                </div>
               </div>
             )}
 
-            {/* Zone icon */}
-            <span className="text-2xl mb-1">{zone.icon}</span>
-
-            {/* Zone name */}
-            <span
-              className={`text-xs font-bold text-center leading-tight ${
-                isUnlocked ? "text-white" : "text-gray-500"
-              }`}
+            {/* Pin/marker */}
+            <div
+              className={`
+                relative flex flex-col items-center transition-transform
+                ${isActive ? "scale-110" : "hover:scale-105"}
+              `}
             >
-              {zone.name}
-            </span>
-
-            {/* Unlock cost */}
-            {!isUnlocked && (
-              <span
-                className={`text-[10px] mt-1 ${
-                  canAfford ? "text-yellow-400" : "text-gray-600"
-                }`}
+              {/* Pin head */}
+              <div
+                className="relative w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all"
+                style={{
+                  background: isUnlocked
+                    ? `linear-gradient(135deg, ${zone.color}, ${zone.color}cc)`
+                    : canAfford
+                      ? "linear-gradient(135deg, var(--color-corruption-dim), var(--color-bg-elevated))"
+                      : "var(--color-bg-card)",
+                  border: `2px solid ${isActive ? zone.color : isUnlocked ? `${zone.color}88` : "var(--color-border-card)"}`,
+                  boxShadow: isActive
+                    ? `0 0 20px ${zone.color}60, 0 4px 12px rgba(0,0,0,0.4)`
+                    : isNickHere
+                      ? "0 0 20px rgba(139, 47, 53, 0.6), 0 4px 12px rgba(0,0,0,0.4)"
+                      : "0 4px 12px rgba(0,0,0,0.3)",
+                  filter: !isUnlocked && !canAfford ? "grayscale(0.8)" : "none",
+                  opacity: !isUnlocked && !canAfford ? 0.5 : 1,
+                }}
               >
-                {GameStore.formatMoney(zone.unlockCost)}
-              </span>
-            )}
+                {zone.icon}
+                
+                {/* Active indicator ring */}
+                {isActive && (
+                  <div 
+                    className="absolute inset-0 rounded-full animate-ping"
+                    style={{ 
+                      border: `2px solid ${zone.color}`,
+                      opacity: 0.4,
+                    }}
+                  />
+                )}
+              </div>
 
-            {/* Active indicator */}
-            {isActive && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] bg-white text-gray-900 px-1 rounded font-bold">
-                ACTIVE
-              </span>
-            )}
+              {/* Pin point */}
+              <div
+                className="w-0 h-0"
+                style={{
+                  borderLeft: "6px solid transparent",
+                  borderRight: "6px solid transparent",
+                  borderTop: `8px solid ${isUnlocked ? zone.color : "var(--color-border-card)"}`,
+                }}
+              />
+
+              {/* Zone label */}
+              <div
+                className="absolute top-14 whitespace-nowrap px-2 py-1 rounded text-xs"
+                style={{
+                  background: "var(--color-bg-elevated)",
+                  border: `1px solid ${isActive ? zone.color : "var(--color-border-card)"}`,
+                  color: isUnlocked ? zone.color : "var(--color-text-muted)",
+                  fontFamily: "var(--font-display)",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                {zone.name}
+                {!isUnlocked && (
+                  <span 
+                    className="ml-1"
+                    style={{ 
+                      color: canAfford ? "var(--color-money)" : "var(--color-text-dim)",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "10px",
+                    }}
+                  >
+                    ({GameStore.formatMoney(zone.unlockCost)})
+                  </span>
+                )}
+              </div>
+
+              {/* Locked/unlocked stamp */}
+              {!isUnlocked && (
+                <div 
+                  className="absolute -top-2 -right-2 text-[8px] px-1.5 py-0.5 rounded rotate-12"
+                  style={{
+                    background: canAfford ? "var(--color-money)30" : "var(--color-danger)30",
+                    color: canAfford ? "var(--color-money)" : "var(--color-danger-bright)",
+                    fontFamily: "var(--font-mono)",
+                    border: `1px solid ${canAfford ? "var(--color-money)" : "var(--color-danger)"}40`,
+                  }}
+                >
+                  {canAfford ? "UNLOCK" : "LOCKED"}
+                </div>
+              )}
+            </div>
           </button>
         );
       })}
 
-      {/* Nick Shirley icon (when not in a zone) */}
-      {!nickShirleyLocation && (
-        <div
-          className="absolute text-xl animate-nick-walking"
-          style={{ left: "5%", bottom: "10%" }}
-        >
-          🎥
+      {/* Map legend */}
+      <div 
+        className="absolute bottom-2 left-2 px-3 py-2 rounded text-[10px] space-y-1"
+        style={{
+          background: "var(--color-bg-elevated)",
+          border: "1px solid var(--color-border-card)",
+          fontFamily: "var(--font-mono)",
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-2 h-2 rounded-full"
+            style={{ background: "var(--color-money)" }}
+          />
+          <span style={{ color: "var(--color-text-muted)" }}>Active Zone</span>
         </div>
-      )}
-
-      {/* Legend */}
-      <div className="absolute bottom-2 left-2 text-[9px] text-gray-600">
-        <div className="flex items-center gap-1">
-          <span className="w-2 h-2 bg-green-500/50 rounded" />
-          <span>Unlocked</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-2 h-2 border border-dashed border-gray-500 rounded" />
-          <span>Locked</span>
+        <div className="flex items-center gap-2">
+          <span>📷</span>
+          <span style={{ color: "var(--color-danger-bright)" }}>Nick Shirley</span>
         </div>
       </div>
 
-      {/* Compass */}
-      <div className="absolute bottom-2 right-2 text-gray-600 text-xs">
-        ↑N
+      {/* Investigation label */}
+      <div 
+        className="absolute top-2 right-2 px-2 py-1 rounded text-[9px] uppercase tracking-wider"
+        style={{
+          background: "var(--color-danger)20",
+          color: "var(--color-danger-bright)",
+          fontFamily: "var(--font-mono)",
+        }}
+      >
+        🔍 Investigation Map
       </div>
     </div>
   );
 }
 
+export namespace MinneapolisMap {
+  export type Position = { x: number; y: number };
+}

@@ -1,0 +1,50 @@
+# Minnesota Fraud Clicker Game - Project Rules
+
+## Always Read Context First
+
+Before making changes to this project, always read `/docs/NEWS_REVIEW.md` for essential context about the real-world scandal this game satirizes.
+
+## Project Overview
+
+This is a satirical idle/clicker game based on the real Minnesota welfare fraud scandal—potentially the largest in American history.
+
+### Key Facts
+
+- **Scale**: Up to $9 billion estimated stolen (half of $18B in federal funds since 2018)
+- **57+ convictions** with sentences up to 28 years
+- **Viral exposure**: Nick Shirley's investigation video got 100M+ views
+
+### Programs Exploited (Game Themes)
+
+- **Feeding Our Future** - Fake meal distribution during COVID (largest case)
+- **CCAP** - Child Care Assistance Program (phantom children, empty daycares)
+- **EIDBI** - Autism therapy services (fake diagnoses, inflated billing)
+- **Medicaid/PCA** - Personal Care Attendant fraud (nonexistent services)
+- **Housing Stabilization** - Fraudulent billing for housing assistance
+
+### Key Figures
+
+| Name         | Role                       | Relevance                                |
+| ------------ | -------------------------- | ---------------------------------------- |
+| Aimee Bock   | Feeding Our Future founder | 28-year sentence, main villain archetype |
+| Nick Shirley | Independent journalist     | Exposed the scandal, viral video         |
+| Tim Walz     | Governor of Minnesota      | "Culture of being too trusting"          |
+| Kristi Noem  | DHS Secretary              | Federal investigation response           |
+
+### Locations
+
+- **Cedar-Riverside** - Minneapolis neighborhood, center of many fraudulent operations
+- Various Minneapolis zones with empty daycares and fake service centers
+
+### Money Trail
+
+- Funds sent overseas to Kenya, Turkey
+- Luxury purchases (cars, real estate)
+- Only $60-70M recovered of billions stolen
+
+## Code Style Reminders
+
+- Use functional expression-style syntax (ternaries, expressions over `if` blocks)
+- Prefer early returns for null/undefined checks
+- Follow domain-driven structure with namespaced components
+- Imports from root use `~/` prefix

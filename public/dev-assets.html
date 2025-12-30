@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asset Viewer - Dev</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      background: #1a1a2e; 
+      color: #eee; 
+      font-family: system-ui, sans-serif;
+      padding: 2rem;
+    }
+    h1 { margin-bottom: 1rem; color: #ffd700; }
+    h2 { margin: 2rem 0 1rem; color: #c4a44b; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: #2a2a4e;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #444;
+    }
+    .card img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      display: block;
+    }
+    .card .label {
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      text-align: center;
+      background: #1a1a2e;
+    }
+    .error { color: #ff6b6b; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>🎨 Generated Assets Viewer</h1>
+  
+  <h2>📍 Zones</h2>
+  <div class="grid" id="zones"></div>
+  
+  <h2>👤 Characters</h2>
+  <div class="grid" id="characters"></div>
+  
+  <h2>🖼️ Screens</h2>
+  <div class="grid" id="screens"></div>
+  
+  <h2>⬆️ Upgrades</h2>
+  <div class="grid" id="upgrades"></div>
+  
+  <h2>📰 Events</h2>
+  <div class="grid" id="events"></div>
+
+  <script>
+    const assets = {
+      zones: [
+        'daycare', 'food-program', 'housing', 'autism-services', 
+        'medicaid', 'refugee-services', 'political', 'nonprofit-empire',
+        'shadow-banking', 'state-capture', 'endgame'
+      ],
+      characters: [
+        'nick-shirley', 'aimee-bock', 'tim-walz', 'kristi-noem', 'federal-agent'
+      ],
+      screens: [
+        'victory', 'arrest', 'title'
+      ],
+      upgrades: [],
+      events: []
+    };
+
+    function createCard(name, path) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <img src="${path}" alt="${name}" onerror="this.parentElement.querySelector('.label').classList.add('error'); this.style.display='none'; this.parentElement.querySelector('.label').textContent='❌ ${name} (missing)'">
+        <div class="label">${name}</div>
+      `;
+      return card;
+    }
+
+    // Populate grids
+    Object.entries(assets).forEach(([category, names]) => {
+      const grid = document.getElementById(category);
+      if (names.length === 0) {
+        grid.innerHTML = '<p style="color:#666">No assets defined</p>';
+        return;
+      }
+      names.forEach(name => {
+        const path = `/assets/generated/${category}/${name}.webp`;
+        grid.appendChild(createCard(name, path));
+      });
+    });
+  </script>
+</body>
+</html>
+
