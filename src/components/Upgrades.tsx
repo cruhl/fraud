@@ -3,7 +3,6 @@ import { useGameStore, GameStore } from "~/store/gameStore";
 import { getUpgradesForZone, type Upgrade } from "~/data/upgrades";
 import { UPGRADES } from "~/data/upgrades";
 import { playSound } from "~/hooks/useAudio";
-import { getUpgradeImageUrl } from "~/lib/assets";
 
 export function Upgrades() {
   const money = useGameStore((s) => s.money);
@@ -226,26 +225,13 @@ export namespace Upgrades {
         <div className="flex items-start gap-3">
           {/* Icon/Image */}
           <div 
-            className={`text-2xl w-10 h-10 flex items-center justify-center rounded-md shrink-0 overflow-hidden ${upgrade.imagePrompt ? "ai-image-upgrade" : ""}`}
+            className="text-2xl w-10 h-10 flex items-center justify-center rounded-md shrink-0"
             style={{
               background: "var(--color-bg-primary)",
               border: "1px solid var(--color-border-card)",
             }}
           >
-            {upgrade.imagePrompt ? (
-              <img 
-                src={getUpgradeImageUrl(upgrade.id)}
-                alt={upgrade.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) parent.textContent = upgrade.icon;
-                }}
-              />
-            ) : (
-              upgrade.icon
-            )}
+            {upgrade.icon}
           </div>
 
           {/* Details */}

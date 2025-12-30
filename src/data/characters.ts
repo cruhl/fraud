@@ -15,7 +15,7 @@ export type Character = {
 };
 
 export const CHARACTERS: Character[] = [
-  // Main antagonist
+  // Main antagonist - Nick Shirley: real person, young white YouTuber journalist
   {
     id: "nick-shirley",
     name: "Nick Shirley",
@@ -24,7 +24,7 @@ export const CHARACTERS: Character[] = [
       "Independent YouTuber whose viral 42-minute video exposed the scandal",
     image: "/assets/generated/characters/nick-shirley.webp",
     imagePrompt:
-      "young man with video camera, backwards baseball cap, intense focused eyes, trenchcoat, investigator searching for truth",
+      "young white male early 20s, short brown hair, light stubble on chin, wearing casual grey hoodie, holding professional camera up to eye, intense focused expression, dramatic side lighting, dark moody background, visible brushstrokes",
   },
 
   // Trial screen characters
@@ -35,7 +35,7 @@ export const CHARACTERS: Character[] = [
     description: "High-priced attorney who might get you off",
     image: "/assets/generated/characters/expensive-lawyer.webp",
     imagePrompt:
-      "slick defense attorney, pinstripe suit, slicked back hair, confident smirk, expensive watch, leather briefcase",
+      "distinguished white male 50s, slicked back silver hair, sharp features, tailored navy suit red silk tie, confident smirk, dramatic chiaroscuro lighting, rich warm tones, dark background, visible brushstrokes",
   },
   {
     id: "public-defender",
@@ -44,7 +44,7 @@ export const CHARACTERS: Character[] = [
     description: "Overworked public defender with a stack of cases",
     image: "/assets/generated/characters/public-defender.webp",
     imagePrompt:
-      "exhausted lawyer, dark circles under eyes, loose tie, rumpled suit, overflowing folder of papers, coffee stains",
+      "tired white female 40s, messy brown hair in bun, dark circles under eyes, glasses pushed up on forehead, wrinkled blouse loose tie, holding overflowing manila folders, exhausted expression, harsh fluorescent lighting effect, muted colors, visible brushstrokes",
   },
   {
     id: "federal-judge",
@@ -53,7 +53,7 @@ export const CHARACTERS: Character[] = [
     description: "The one who decides your fate",
     image: "/assets/generated/characters/federal-judge.webp",
     imagePrompt:
-      "stern elderly judge, black judicial robes, raised wooden gavel, American flag draped behind, piercing disapproving gaze",
+      "stern elderly white male 70s, thick white hair, deep wrinkles jowls, silver reading glasses, black judicial robes, holding wooden gavel, cold disapproving glare, dramatic overhead lighting, dark shadowy background, visible brushstrokes",
   },
 
   // Event characters
@@ -64,7 +64,7 @@ export const CHARACTERS: Character[] = [
     description: "Part of the FBI surge into Minneapolis",
     image: "/assets/generated/characters/fbi-agent.webp",
     imagePrompt:
-      "stoic federal agent, dark suit and tie, reflective sunglasses, coiled earpiece, badge on belt, hands clasped",
+      "serious Black male 30s, short cropped hair, clean shaven, dark sunglasses hiding eyes, charcoal suit white shirt black tie, earpiece, stoic neutral expression, harsh direct lighting, dark blue background, visible brushstrokes",
   },
   {
     id: "dhs-official",
@@ -73,7 +73,7 @@ export const CHARACTERS: Character[] = [
     description: "Kristi Noem's strike team member",
     image: "/assets/generated/characters/dhs-official.webp",
     imagePrompt:
-      "homeland security officer, tactical vest, radio on shoulder, stern expression, crew cut, folded arms",
+      "intimidating muscular white male 40s, military buzzcut, thick neck square jaw, cold blue eyes, black tactical vest with pouches, silver badge, arms crossed, threatening stare, harsh overhead lighting, concrete grey background, visible brushstrokes",
   },
   {
     id: "tim-walz",
@@ -82,7 +82,7 @@ export const CHARACTERS: Character[] = [
     description: "Administration was 'too trusting'",
     image: "/assets/generated/characters/tim-walz.webp",
     imagePrompt:
-      "middle aged bald man with glasses, flannel shirt under blazer, nervous expression, hands raised defensively, sweating",
+      "white male 60, chubby round face soft jawline, full grey white hair swept to side, thin light grey rectangular glasses, clean shaven, big friendly smile showing teeth, dark suit white shirt, warm approachable midwestern dad look, warm lighting, neutral background, visible brushstrokes",
   },
   {
     id: "corrupt-inspector",
@@ -91,7 +91,7 @@ export const CHARACTERS: Character[] = [
     description: "Always finds children present... somehow",
     image: "/assets/generated/characters/corrupt-inspector.webp",
     imagePrompt:
-      "sleazy bureaucrat, cheap suit, looking sideways, winking, clipboard tucked under arm, hand in pocket",
+      "sleazy white male 50s, thinning greasy combover, small beady eyes winking, bulbous red nose, cheap brown polyester suit, yellowed shirt crooked tie, holding clipboard, oily insincere smile, unflattering fluorescent lighting, beige background, visible brushstrokes",
   },
 
   // Victory/celebration characters
@@ -102,7 +102,7 @@ export const CHARACTERS: Character[] = [
     description: "The player's avatar - a successful fraud operator",
     image: "/assets/generated/characters/fraud-mastermind.webp",
     imagePrompt:
-      "wealthy criminal boss, expensive three piece suit, gold rings, cigar, sitting on throne of stacked cash bundles, smug grin",
+      "powerful Somali male 40s, dark skin, short black hair greying temples, strong cheekbones, short goatee, expensive black suit, white shirt open collar showing gold chain, gold rings, holding lit cigar with smoke, supremely confident grin, dramatic golden side lighting, dark background, visible brushstrokes",
   },
 ];
 
@@ -131,7 +131,7 @@ export const SCREEN_ART: ScreenArt[] = [
     description: "$9 Billion stolen - you win",
     image: "/assets/generated/screens/victory.webp",
     imagePrompt:
-      "golden trophy overflowing with cash, money raining from above, spotlights, champagne bottles popping, confetti",
+      "towering pile of cash and gold bars, champagne bottle exploding, golden confetti, dramatic spotlight from above, deep shadows, celebration excess wealth, rich golds and greens, thick visible brushstrokes, oil painting style",
     aspectRatio: "landscape_16_9",
   },
   {
@@ -140,7 +140,7 @@ export const SCREEN_ART: ScreenArt[] = [
     description: "FBI caught you",
     image: "/assets/generated/screens/trial-arrest.webp",
     imagePrompt:
-      "steel handcuffs snapping closed on wrists, police lights flashing, federal agents in silhouette, dramatic shadows",
+      "steel handcuffs clicking shut on wrists, red and blue police lights flashing in rain, wet pavement reflections, cold harsh lighting, noir atmosphere, despair and capture, visible brushstrokes, oil painting style",
     aspectRatio: "landscape_16_9",
   },
   {
@@ -149,7 +149,7 @@ export const SCREEN_ART: ScreenArt[] = [
     description: "Federal trial in progress",
     image: "/assets/generated/screens/trial-courtroom.webp",
     imagePrompt:
-      "grand federal courtroom interior, wooden judge bench, American flag, empty witness stand, ceiling lights",
+      "grand federal courtroom interior from defendant view, dark wood paneling, elevated judge bench, American flag, empty jury box, warm afternoon light through tall windows, solemn oppressive atmosphere, visible brushstrokes, oil painting style",
     aspectRatio: "landscape_16_9",
   },
   {
@@ -158,7 +158,7 @@ export const SCREEN_ART: ScreenArt[] = [
     description: "Convicted of fraud",
     image: "/assets/generated/screens/verdict-guilty.webp",
     imagePrompt:
-      "wooden gavel striking down hard, iron prison bars, heavy chains, dark ominous shadows closing in",
+      "gavel slamming down, looking through thick iron prison bars, harsh single overhead light, deep black shadows, doom imprisonment, stark simple composition, visible brushstrokes, oil painting style",
     aspectRatio: "square",
   },
   {
@@ -167,7 +167,7 @@ export const SCREEN_ART: ScreenArt[] = [
     description: "Not guilty - you walked free",
     image: "/assets/generated/screens/verdict-acquitted.webp",
     imagePrompt:
-      "courthouse doors swinging open wide, bright golden light streaming through, silhouette walking to freedom",
+      "massive wooden doors swinging wide open, brilliant golden sunlight flooding through, silhouette walking toward light arms raised in victory, dark interior contrasting bright exterior, freedom hope, visible brushstrokes, oil painting style",
     aspectRatio: "square",
   },
   {
@@ -176,7 +176,7 @@ export const SCREEN_ART: ScreenArt[] = [
     description: "Main title area backdrop",
     image: "/assets/generated/screens/game-header.webp",
     imagePrompt:
-      "scattered manila folders and documents, red string connecting photos on corkboard, detective desk, magnifying glass",
+      "conspiracy corkboard with photos connected by red string, newspaper clippings pinned up, wooden desk scattered with manila folders, green banker lamp casting warm glow, dark moody shadows, noir detective aesthetic, visible brushstrokes, oil painting style",
     aspectRatio: "landscape_16_9",
   },
 ];

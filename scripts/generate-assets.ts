@@ -22,7 +22,12 @@ import * as path from "path";
 import { ZONES } from "../src/data/zones";
 import { UPGRADES } from "../src/data/upgrades";
 import { CHARACTERS, SCREEN_ART } from "../src/data/characters";
-import { STYLE_ANCHORS, NEGATIVE_PROMPT } from "../src/lib/fal";
+import {
+  STYLE_ANCHORS,
+  NEGATIVE_PROMPT,
+  CHARACTER_BASE,
+  SCREEN_BASE,
+} from "../src/lib/fal";
 
 // Configure Fal AI
 const FAL_KEY = process.env.FAL_KEY;
@@ -66,7 +71,7 @@ interface GenerationResult {
 }
 
 /**
- * Generate a single image using Fast SDXL (supports negative prompts)
+ * Generate a single image using FLUX Dev (high quality)
  */
 async function generateImage(
   prompt: string,
@@ -77,12 +82,13 @@ async function generateImage(
     console.log(`  🎨 Generating: ${path.basename(outputPath)}`);
     console.log(`     Prompt: ${prompt.slice(0, 80)}...`);
 
-    const result = await fal.subscribe("fal-ai/fast-sdxl", {
+    const result = await fal.subscribe("fal-ai/flux/dev", {
       input: {
         prompt,
-        negative_prompt: NEGATIVE_PROMPT,
         image_size: imageSize,
         num_images: 1,
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
       },
     });
 
@@ -126,7 +132,7 @@ async function generateScreens(): Promise<GenerationResult[]> {
       continue;
     }
 
-    const fullPrompt = `${screen.imagePrompt}, ${STYLE_ANCHORS.screen}`;
+    const fullPrompt = `${screen.imagePrompt}, ${SCREEN_BASE.suffix}`;
     const aspectRatio =
       screen.aspectRatio === "landscape_16_9"
         ? ("landscape_16_9" as ImageSize)
@@ -167,7 +173,7 @@ async function generateCharacters(): Promise<GenerationResult[]> {
       continue;
     }
 
-    const fullPrompt = `${character.imagePrompt}, ${STYLE_ANCHORS.character}`;
+    const fullPrompt = `${CHARACTER_BASE.prefix}, ${character.imagePrompt}, ${CHARACTER_BASE.suffix}`;
     const success = await generateImage(fullPrompt, outputPath, "square");
     results.push({
       id: character.id,

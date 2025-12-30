@@ -2,11 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { UPGRADES, type Upgrade } from "~/data/upgrades";
 import { ZONES, type Zone } from "~/data/zones";
-import {
-  POLITICAL_EVENTS,
-  type PoliticalEvent,
-  getRandomEvent,
-} from "~/data/events";
+import { type PoliticalEvent, getRandomEvent } from "~/data/events";
 import { ACHIEVEMENTS } from "~/data/achievements";
 
 // Define nested types first
@@ -104,6 +100,8 @@ export type GameActions = {
   clickGoldenClaim: () => void;
   dismissGoldenClaim: () => void;
   unlockTrialAchievement: (type: "arrested" | "acquitted" | "maxSentence") => void;
+  newGame: () => void;
+  fullReset: () => void;
 };
 
 export type GameStore = GameState & GameActions;
@@ -385,7 +383,6 @@ export const useGameStore = create<GameStore>()(
           let goldenClaim = s.goldenClaim;
           const timeSinceLastGolden = now - s.lastGoldenClaimTime;
           const minSpawnTime = 30_000;
-          const maxSpawnTime = 90_000;
 
           // Expire existing golden claim
           if (goldenClaim && now > goldenClaim.expiresAt) {
@@ -586,15 +583,34 @@ export const useGameStore = create<GameStore>()(
           return { unlockedAchievements: newAchievements };
         });
       },
+
+      newGame: () => {
+        // Starts a fresh game but keeps achievements and prestige bonuses
+        const state = get();
+        set({
+          ...INITIAL_STATE,
+          lastTick: Date.now(),
+          gameStartTime: Date.now(),
+          totalArrestCount: state.totalArrestCount,
+          prestigeBonuses: state.prestigeBonuses,
+          unlockedAchievements: state.unlockedAchievements,
+          lifetimeStats: state.lifetimeStats,
+        });
+      },
+
+      fullReset: () => {
+        // Completely wipes everything including achievements and prestige
+        set({
+          ...INITIAL_STATE,
+          lastTick: Date.now(),
+          gameStartTime: Date.now(),
+          lifetimeStats: INITIAL_LIFETIME_STATS,
+        });
+      },
     }),
     {
       name: "minnesota-fraud-empire",
-      partialize: (state) => ({
-        unlockedAchievements: state.unlockedAchievements,
-        totalArrestCount: state.totalArrestCount,
-        prestigeBonuses: state.prestigeBonuses,
-        lifetimeStats: state.lifetimeStats,
-      }),
+      // Persist full game state for progress saving
     }
   )
 );

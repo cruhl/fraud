@@ -94,17 +94,50 @@ export async function generateImageFluxPro(
   return result.data as ImageGenerationResult;
 }
 
-// Style anchors for consistent generation
-// Simple oil painting style - hides AI artifacts, consistent across all assets
-export const STYLE_ANCHORS = {
-  zone: "oil painting, dark moody palette, visible brushstrokes, muted colors, atmospheric",
-  upgrade: "oil painting, dark background, single object, visible brushstrokes, muted gold tones",
-  character: "oil painting portrait, dark background, rembrandt lighting, visible brushstrokes",
-  screen: "oil painting, dramatic composition, dark palette, visible brushstrokes, cinematic",
+// ============================================
+// SHARED STYLE CONSTANTS
+// ============================================
+
+// Lighting - consistent across all images
+export const LIGHTING = {
+  portrait:
+    "soft diffused studio lighting from upper left at 45 degrees, subtle fill light from right, dark gradient background",
+  scene: "warm golden hour side lighting, soft shadows, atmospheric haze",
+  dramatic: "single harsh spotlight from above, deep shadows, high contrast",
 } as const;
 
-// Negative prompt to block common AI issues
-export const NEGATIVE_PROMPT = "text, words, letters, numbers, watermark, signature, blurry, deformed, disfigured, bad anatomy, extra limbs, cartoon, anime, 3d render, cgi";
+// Medium - oil painting style hides AI artifacts
+export const MEDIUM =
+  "modern oil painting, visible brushstrokes, rich color saturation, thick impasto texture";
+
+// Background - keep simple to avoid artifacts
+export const BACKGROUND = {
+  portrait: "solid dark brown gradient background fading to black",
+  scene: "atmospheric depth, soft focus background",
+} as const;
+
+// Negative prompt - block common issues
+export const NEGATIVE_PROMPT =
+  "text, words, letters, numbers, watermark, signature, blurry, deformed, disfigured, bad anatomy, extra limbs, cartoon, anime, 3d render, cgi, frame, border, grid, multiple images, collage, tiled, pattern, repeating";
+
+// Combined style anchors using constants
+export const STYLE_ANCHORS = {
+  zone: `${MEDIUM}, ${LIGHTING.scene}, ${BACKGROUND.scene}`,
+  upgrade: `${MEDIUM}, ${LIGHTING.dramatic}, solid black background`,
+  character: `${MEDIUM}, ${LIGHTING.portrait}, ${BACKGROUND.portrait}`,
+  screen: `${MEDIUM}, ${LIGHTING.dramatic}, ${BACKGROUND.scene}`,
+} as const;
+
+// Character base attributes - use in prompts
+export const CHARACTER_BASE = {
+  prefix: "single person portrait, head and shoulders",
+  suffix: `${LIGHTING.portrait}, ${BACKGROUND.portrait}`,
+} as const;
+
+// Screen base attributes
+export const SCREEN_BASE = {
+  suffix: `${LIGHTING.dramatic}`,
+} as const;
 
 /**
  * Build a prompt with style anchors

@@ -1,103 +1,372 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Asset Viewer - Dev</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-      background: #1a1a2e; 
-      color: #eee; 
-      font-family: system-ui, sans-serif;
-      padding: 2rem;
-    }
-    h1 { margin-bottom: 1rem; color: #ffd700; }
-    h2 { margin: 2rem 0 1rem; color: #c4a44b; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-    .card {
-      background: #2a2a4e;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid #444;
-    }
-    .card img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-      display: block;
-    }
-    .card .label {
-      padding: 0.5rem;
-      font-size: 0.85rem;
-      text-align: center;
-      background: #1a1a2e;
-    }
-    .error { color: #ff6b6b; font-style: italic; }
-  </style>
-</head>
-<body>
-  <h1>🎨 Generated Assets Viewer</h1>
-  
-  <h2>📍 Zones</h2>
-  <div class="grid" id="zones"></div>
-  
-  <h2>👤 Characters</h2>
-  <div class="grid" id="characters"></div>
-  
-  <h2>🖼️ Screens</h2>
-  <div class="grid" id="screens"></div>
-  
-  <h2>⬆️ Upgrades</h2>
-  <div class="grid" id="upgrades"></div>
-  
-  <h2>📰 Events</h2>
-  <div class="grid" id="events"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Asset Viewer - Dev</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #1a1a2e;
+        color: #eee;
+        font-family: system-ui, sans-serif;
+        padding: 2rem;
+      }
+      h1 {
+        margin-bottom: 1rem;
+        color: #ffd700;
+      }
+      h2 {
+        margin: 2rem 0 1rem;
+        color: #c4a44b;
+        border-bottom: 1px solid #333;
+        padding-bottom: 0.5rem;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+      }
+      .card {
+        background: #2a2a4e;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #444;
+      }
+      .card img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        display: block;
+        transition: filter 0.2s;
+      }
+      .card .label {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        text-align: center;
+        background: #1a1a2e;
+      }
+      .error {
+        color: #ff6b6b;
+        font-style: italic;
+      }
 
-  <script>
-    const assets = {
-      zones: [
-        'daycare', 'food-program', 'housing', 'autism-services', 
-        'medicaid', 'refugee-services', 'political', 'nonprofit-empire',
-        'shadow-banking', 'state-capture', 'endgame'
-      ],
-      characters: [
-        'nick-shirley', 'aimee-bock', 'tim-walz', 'kristi-noem', 'federal-agent'
-      ],
-      screens: [
-        'victory', 'arrest', 'title'
-      ],
-      upgrades: [],
-      events: []
-    };
+      /* Controls panel */
+      .controls {
+        position: sticky;
+        top: 0;
+        background: #12121f;
+        padding: 1rem;
+        margin: -2rem -2rem 2rem -2rem;
+        border-bottom: 2px solid #333;
+        z-index: 100;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+      }
+      .control-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .control-group label {
+        font-size: 0.85rem;
+        color: #aaa;
+      }
+      .control-group input[type="range"] {
+        width: 100px;
+      }
+      .control-group input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+      }
+      .control-group span {
+        font-size: 0.75rem;
+        color: #888;
+        min-width: 40px;
+      }
+      .preset-btn {
+        padding: 0.4rem 0.8rem;
+        background: #3a3a5e;
+        border: 1px solid #555;
+        color: #eee;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+      .preset-btn:hover {
+        background: #4a4a7e;
+      }
+      .preset-btn.active {
+        background: #c4a44b;
+        color: #000;
+      }
+      .divider {
+        width: 1px;
+        height: 30px;
+        background: #444;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls">
+      <div class="control-group">
+        <label>Blur:</label>
+        <input type="range" id="blur" min="0" max="5" step="0.1" value="0.5" />
+        <span id="blur-val">0.5px</span>
+      </div>
+      <div class="control-group">
+        <label>Saturate:</label>
+        <input
+          type="range"
+          id="saturate"
+          min="0"
+          max="2"
+          step="0.1"
+          value="1"
+        />
+        <span id="saturate-val">1</span>
+      </div>
+      <div class="control-group">
+        <label>Contrast:</label>
+        <input
+          type="range"
+          id="contrast"
+          min="0.5"
+          max="2"
+          step="0.1"
+          value="1"
+        />
+        <span id="contrast-val">1</span>
+      </div>
+      <div class="control-group">
+        <label>Brightness:</label>
+        <input
+          type="range"
+          id="brightness"
+          min="0.5"
+          max="1.5"
+          step="0.1"
+          value="1"
+        />
+        <span id="brightness-val">1</span>
+      </div>
+      <div class="control-group">
+        <label>Grayscale:</label>
+        <input
+          type="range"
+          id="grayscale"
+          min="0"
+          max="1"
+          step="0.1"
+          value="0"
+        />
+        <span id="grayscale-val">0</span>
+      </div>
+      <div class="control-group">
+        <label>Sepia:</label>
+        <input type="range" id="sepia" min="0" max="1" step="0.1" value="0" />
+        <span id="sepia-val">0</span>
+      </div>
+      <div class="divider"></div>
+      <button class="preset-btn" data-preset="none">None</button>
+      <button class="preset-btn active" data-preset="subtle">
+        Subtle Blur
+      </button>
+      <button class="preset-btn" data-preset="noir">Noir</button>
+      <button class="preset-btn" data-preset="vintage">Vintage</button>
+      <button class="preset-btn" data-preset="heavy">Heavy</button>
+    </div>
 
-    function createCard(name, path) {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
+    <h1>🎨 Generated Assets Viewer</h1>
+
+    <h2>📍 Zones</h2>
+    <div class="grid" id="zones"></div>
+
+    <h2>👤 Characters</h2>
+    <div class="grid" id="characters"></div>
+
+    <h2>🖼️ Screens</h2>
+    <div class="grid" id="screens"></div>
+
+    <h2>⬆️ Upgrades</h2>
+    <div class="grid" id="upgrades"></div>
+
+    <h2>📰 Events</h2>
+    <div class="grid" id="events"></div>
+
+    <script>
+      const assets = {
+        zones: [
+          "daycare",
+          "food-program",
+          "housing",
+          "autism",
+          "medicaid",
+          "refugee-services",
+          "political",
+          "nonprofit-empire",
+          "shadow-banking",
+          "state-capture",
+          "endgame",
+        ],
+        characters: [
+          "nick-shirley",
+          "expensive-lawyer",
+          "public-defender",
+          "federal-judge",
+          "fbi-agent",
+          "dhs-official",
+          "tim-walz",
+          "corrupt-inspector",
+          "fraud-mastermind",
+        ],
+        screens: [
+          "victory",
+          "trial-arrest",
+          "trial-courtroom",
+          "verdict-guilty",
+          "verdict-acquitted",
+          "game-header",
+        ],
+        upgrades: [],
+        events: [],
+      };
+
+      function createCard(name, path) {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
         <img src="${path}" alt="${name}" onerror="this.parentElement.querySelector('.label').classList.add('error'); this.style.display='none'; this.parentElement.querySelector('.label').textContent='❌ ${name} (missing)'">
         <div class="label">${name}</div>
       `;
-      return card;
-    }
-
-    // Populate grids
-    Object.entries(assets).forEach(([category, names]) => {
-      const grid = document.getElementById(category);
-      if (names.length === 0) {
-        grid.innerHTML = '<p style="color:#666">No assets defined</p>';
-        return;
+        return card;
       }
-      names.forEach(name => {
-        const path = `/assets/generated/${category}/${name}.webp`;
-        grid.appendChild(createCard(name, path));
-      });
-    });
-  </script>
-</body>
-</html>
 
+      // Populate grids
+      Object.entries(assets).forEach(([category, names]) => {
+        const grid = document.getElementById(category);
+        if (names.length === 0) {
+          grid.innerHTML = '<p style="color:#666">No assets defined</p>';
+          return;
+        }
+        names.forEach((name) => {
+          const path = `/assets/generated/${category}/${name}.webp`;
+          grid.appendChild(createCard(name, path));
+        });
+      });
+
+      // Effect controls
+      const controls = [
+        "blur",
+        "saturate",
+        "contrast",
+        "brightness",
+        "grayscale",
+        "sepia",
+      ];
+
+      const presets = {
+        none: {
+          blur: 0,
+          saturate: 1,
+          contrast: 1,
+          brightness: 1,
+          grayscale: 0,
+          sepia: 0,
+        },
+        subtle: {
+          blur: 0.5,
+          saturate: 1,
+          contrast: 1,
+          brightness: 1,
+          grayscale: 0,
+          sepia: 0,
+        },
+        noir: {
+          blur: 0.3,
+          saturate: 0.3,
+          contrast: 1.2,
+          brightness: 0.9,
+          grayscale: 0.5,
+          sepia: 0,
+        },
+        vintage: {
+          blur: 0.4,
+          saturate: 0.7,
+          contrast: 1.1,
+          brightness: 0.95,
+          grayscale: 0,
+          sepia: 0.4,
+        },
+        heavy: {
+          blur: 1.5,
+          saturate: 0.5,
+          contrast: 1.3,
+          brightness: 0.8,
+          grayscale: 0.2,
+          sepia: 0,
+        },
+      };
+
+      function applyFilters() {
+        const blur = document.getElementById("blur").value;
+        const saturate = document.getElementById("saturate").value;
+        const contrast = document.getElementById("contrast").value;
+        const brightness = document.getElementById("brightness").value;
+        const grayscale = document.getElementById("grayscale").value;
+        const sepia = document.getElementById("sepia").value;
+
+        const filter = `blur(${blur}px) saturate(${saturate}) contrast(${contrast}) brightness(${brightness}) grayscale(${grayscale}) sepia(${sepia})`;
+
+        document.querySelectorAll(".card img").forEach((img) => {
+          img.style.filter = filter;
+        });
+
+        // Update value displays
+        document.getElementById("blur-val").textContent = blur + "px";
+        document.getElementById("saturate-val").textContent = saturate;
+        document.getElementById("contrast-val").textContent = contrast;
+        document.getElementById("brightness-val").textContent = brightness;
+        document.getElementById("grayscale-val").textContent = grayscale;
+        document.getElementById("sepia-val").textContent = sepia;
+      }
+
+      function applyPreset(name) {
+        const preset = presets[name];
+        controls.forEach((c) => {
+          document.getElementById(c).value = preset[c];
+        });
+        applyFilters();
+
+        // Update active button
+        document.querySelectorAll(".preset-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.preset === name);
+        });
+      }
+
+      // Event listeners
+      controls.forEach((c) => {
+        document.getElementById(c).addEventListener("input", () => {
+          applyFilters();
+          // Clear active preset
+          document
+            .querySelectorAll(".preset-btn")
+            .forEach((btn) => btn.classList.remove("active"));
+        });
+      });
+
+      document.querySelectorAll(".preset-btn").forEach((btn) => {
+        btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
+      });
+
+      // Apply initial preset
+      applyFilters();
+    </script>
+  </body>
+</html>

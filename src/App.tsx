@@ -13,6 +13,7 @@ import { NewsTicker } from "~/components/NewsTicker";
 import { Achievements } from "~/components/Achievements";
 import { GoldenClaim } from "~/components/GoldenClaim";
 import { StatsModal } from "~/components/StatsModal";
+import { NewGameModal } from "~/components/NewGameModal";
 import {
   isSoundEnabled,
   setSoundEnabled,
@@ -160,10 +161,58 @@ export function App() {
           </div>
         </div>
 
+        {/* Desktop header buttons - inside header for proper layout */}
+        <div className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 items-center gap-2">
+          {/* Music Toggle + Volume */}
+          <div
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg transition-all"
+            style={{
+              background: "var(--color-bg-elevated)",
+              border: "1px solid var(--color-border-highlight)",
+              boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+            }}
+          >
+            <button
+              onClick={toggleMusic}
+              className="text-lg px-1 hover:scale-105 transition-transform"
+              title={musicOn ? "Music On" : "Music Off"}
+            >
+              {musicOn ? "🎵" : "🎵"}
+            </button>
+            {musicOn && (
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={musicVolume}
+                onChange={(e) => handleMusicVolume(parseFloat(e.target.value))}
+                className="w-16 h-1 rounded-full appearance-none cursor-pointer"
+                style={{ background: "var(--color-border-highlight)" }}
+                title={`Volume: ${Math.round(musicVolume * 100)}%`}
+              />
+            )}
+            {/* SFX Toggle */}
+            <button
+              onClick={toggleSound}
+              className="text-lg px-1 hover:scale-105 transition-transform"
+              title={soundOn ? "SFX On" : "SFX Off"}
+            >
+              {soundOn ? "🔊" : "🔇"}
+            </button>
+          </div>
+          {/* New Game */}
+          <NewGameModal />
+          {/* Achievements */}
+          <Achievements />
+          {/* Stats */}
+          <StatsModal />
+        </div>
+
         {/* Main title */}
-        <div className="relative z-10 px-4">
+        <div className="relative z-10 px-12 md:px-4">
           <h1
-            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl tracking-wider"
+            className="text-xl sm:text-3xl md:text-5xl lg:text-6xl tracking-wider"
             style={{
               fontFamily: "var(--font-display)",
               background:
@@ -175,9 +224,9 @@ export function App() {
           >
             MINNESOTA FRAUD EMPIRE
           </h1>
-          {/* Tagline - hidden on small mobile */}
+          {/* Tagline */}
           <p
-            className="mt-1 text-xs md:text-sm tracking-wide hidden sm:block"
+            className="mt-1 text-[10px] sm:text-xs md:text-sm tracking-wide"
             style={{ color: "var(--color-text-muted)" }}
           >
             $9 Billion. 14 Programs. One YouTuber.
@@ -271,58 +320,12 @@ export function App() {
               />
             </div>
           )}
+          <NewGameModal inMenu />
           <StatsModal inMenu />
           <Achievements inMenu />
         </div>
       )}
 
-      {/* Desktop header buttons */}
-      <div className={`hidden md:flex fixed right-4 z-50 items-center gap-2 transition-all ${
-        hasEvent ? "top-[70px]" : "top-4"
-      }`}>
-        {/* Music Toggle + Volume */}
-        <div
-          className="flex items-center gap-1 px-2 py-1.5 rounded-lg transition-all"
-          style={{
-            background: "var(--color-bg-elevated)",
-            border: "1px solid var(--color-border-highlight)",
-            boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
-          }}
-        >
-          <button
-            onClick={toggleMusic}
-            className="text-lg px-1 hover:scale-105 transition-transform"
-            title={musicOn ? "Music On" : "Music Off"}
-          >
-            {musicOn ? "🎵" : "🎵"}
-          </button>
-          {musicOn && (
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={musicVolume}
-              onChange={(e) => handleMusicVolume(parseFloat(e.target.value))}
-              className="w-16 h-1 rounded-full appearance-none cursor-pointer"
-              style={{ background: "var(--color-border-highlight)" }}
-              title={`Volume: ${Math.round(musicVolume * 100)}%`}
-            />
-          )}
-          {/* SFX Toggle */}
-          <button
-            onClick={toggleSound}
-            className="text-lg px-1 hover:scale-105 transition-transform"
-            title={soundOn ? "SFX On" : "SFX Off"}
-          >
-            {soundOn ? "🔊" : "🔇"}
-          </button>
-        </div>
-        {/* Achievements */}
-        <Achievements />
-        {/* Stats */}
-        <StatsModal />
-      </div>
 
       {/* Main game area */}
       <main className="container mx-auto px-3 md:px-4 py-4 md:py-8">
@@ -399,8 +402,9 @@ export function App() {
 
           {/* Right column - Upgrades */}
           <aside
-            className="rounded-xl p-4 h-fit sticky top-4"
+            className="rounded-xl p-4 h-fit sticky transition-all duration-300"
             style={{
+              top: hasEvent ? "72px" : "16px",
               background:
                 "linear-gradient(145deg, var(--color-bg-card), var(--color-bg-primary))",
               border: "1px solid var(--color-border-card)",
