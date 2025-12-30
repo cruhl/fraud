@@ -61,6 +61,7 @@ export const saveGame = (name: string): SaveMetadata => {
     fakeClaims: state.fakeClaims,
     viralViews: state.viralViews,
     nickShirleyLocation: state.nickShirleyLocation,
+    nickFilmingProgress: state.nickFilmingProgress,
     threatLevel: state.threatLevel,
     maxThreatLevelReached: state.maxThreatLevelReached,
     isGameOver: state.isGameOver,
@@ -79,9 +80,15 @@ export const saveGame = (name: string): SaveMetadata => {
     goldenClaim: state.goldenClaim,
     lastGoldenClaimTime: state.lastGoldenClaimTime,
     discountEndTime: state.discountEndTime,
+    shredderMinigame: state.shredderMinigame,
+    lastShredderTime: state.lastShredderTime,
+    hiredCrew: state.hiredCrew,
+    hasSeenTutorial: state.hasSeenTutorial,
+    hasSeenNickWarning: state.hasSeenNickWarning,
     lifetimeStats: state.lifetimeStats,
     lastTick: state.lastTick,
     gameStartTime: state.gameStartTime,
+    zoneEnteredTime: state.zoneEnteredTime,
   };
   
   const metadata: SaveMetadata = {

@@ -13,6 +13,9 @@ import { Victory } from "~/components/Victory";
 import { NewsTicker } from "~/components/NewsTicker";
 import { Achievements } from "~/components/Achievements";
 import { GoldenClaim } from "~/components/GoldenClaim";
+import { Shredder } from "~/components/Shredder";
+import { CrewPanel } from "~/components/CrewPanel";
+import { Tutorial, NickWarning } from "~/components/Tutorial";
 import { StatsModal } from "~/components/StatsModal";
 import { NewGameModal } from "~/components/NewGameModal";
 import {
@@ -1684,6 +1687,14 @@ export function App() {
               }}
             />
             <Upgrades />
+
+            {/* Crew section */}
+            <div
+              className="mt-6 pt-6 border-t"
+              style={{ borderColor: "var(--color-border-card)" }}
+            >
+              <CrewPanel />
+            </div>
           </aside>
         </div>
 
@@ -2006,7 +2017,12 @@ export function App() {
                 {showMap ? <MinneapolisMap /> : <ZoneSelector compact />}
               </>
             )}
-            {mobileTab === "shop" && <Upgrades />}
+            {mobileTab === "shop" && (
+              <div className="space-y-6">
+                <Upgrades />
+                <CrewPanel />
+              </div>
+            )}
             {mobileTab === "stats" && <ViralMeter />}
           </div>
         </div>
@@ -2023,6 +2039,13 @@ export function App() {
 
       {/* Golden claim floating bonus */}
       <GoldenClaim />
+
+      {/* Evidence shredder minigame */}
+      <Shredder />
+
+      {/* Tutorial/Onboarding */}
+      <Tutorial />
+      <NickWarning />
 
       {/* Vercel Analytics */}
       <Analytics />

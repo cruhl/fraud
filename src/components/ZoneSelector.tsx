@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useMemo, useEffect } from "react";
 import { useGameStore, GameStore } from "~/store/gameStore";
 import { ZONES } from "~/data/zones";
 import { UPGRADES } from "~/data/upgrades";
@@ -119,6 +119,9 @@ function ZoneStat({
   );
 }
 
+// Time threshold for zone expertise: 5 minutes
+const ZONE_EXPERTISE_TIME_MS = 5 * 60 * 1000;
+
 export function ZoneSelector({ compact = false }: ZoneSelector.Props) {
   const money = useGameStore((s) => s.money);
   const activeZone = useGameStore((s) => s.activeZone);
@@ -126,8 +129,30 @@ export function ZoneSelector({ compact = false }: ZoneSelector.Props) {
   const setActiveZone = useGameStore((s) => s.setActiveZone);
   const unlockZone = useGameStore((s) => s.unlockZone);
   const nickShirleyLocation = useGameStore((s) => s.nickShirleyLocation);
+  const nickFilmingProgress = useGameStore((s) => s.nickFilmingProgress);
+  const zoneEnteredTime = useGameStore((s) => s.zoneEnteredTime);
   const [showLocked, setShowLocked] = useState(false);
   const zoneStats = useZoneStats();
+
+  // Track expertise status with periodic updates
+  const [hasExpertise, setHasExpertise] = useState(false);
+  const [expertiseProgress, setExpertiseProgress] = useState(0);
+
+  // Update expertise status every second
+  useEffect(() => {
+    const updateExpertise = () => {
+      const now = Date.now();
+      const timeInZone = now - (zoneEnteredTime ?? now);
+      setHasExpertise(timeInZone >= ZONE_EXPERTISE_TIME_MS);
+      setExpertiseProgress(
+        Math.min(100, (timeInZone / ZONE_EXPERTISE_TIME_MS) * 100)
+      );
+    };
+
+    updateExpertise();
+    const interval = setInterval(updateExpertise, 1000);
+    return () => clearInterval(interval);
+  }, [zoneEnteredTime]);
 
   // Juice effect states
   const [unlockingZone, setUnlockingZone] = useState<string | null>(null);
@@ -290,26 +315,63 @@ export function ZoneSelector({ compact = false }: ZoneSelector.Props) {
                   >
                     {activeZoneData.name}
                   </span>
-                  {nickShirleyLocation === activeZone && (
+                  {hasExpertise && (
                     <div
-                      className="flex items-center gap-1 px-1.5 py-0.5 rounded animate-warning-flash"
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded animate-glow-pulse"
                       style={{
-                        background: "var(--color-danger)",
-                        color: "white",
+                        background: "rgba(250, 204, 21, 0.2)",
+                        color: "#facc15",
                         fontFamily: "var(--font-mono)",
+                        border: "1px solid rgba(250, 204, 21, 0.4)",
                       }}
                     >
-                      <div className="w-4 h-4 rounded-full overflow-hidden border border-white/50">
-                        <img
-                          src={NICK_SHIRLEY_IMAGE}
-                          alt="Nick"
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.parentElement!.textContent = "📷";
+                      <span className="text-[9px]">⭐ EXPERT +15%</span>
+                    </div>
+                  )}
+                  {nickShirleyLocation === activeZone && (
+                    <div className="flex flex-col gap-0.5">
+                      <div
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded animate-warning-flash"
+                        style={{
+                          background: "var(--color-danger)",
+                          color: "white",
+                          fontFamily: "var(--font-mono)",
+                        }}
+                      >
+                        <div className="w-4 h-4 rounded-full overflow-hidden border border-white/50">
+                          <img
+                            src={NICK_SHIRLEY_IMAGE}
+                            alt="Nick"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.parentElement!.textContent = "📷";
+                            }}
+                          />
+                        </div>
+                        <span className="text-[9px]">
+                          FILMING {nickFilmingProgress.toFixed(0)}%
+                        </span>
+                      </div>
+                      {/* Filming progress bar */}
+                      <div
+                        className="h-1 rounded-full overflow-hidden"
+                        style={{ background: "rgba(139, 47, 53, 0.3)" }}
+                      >
+                        <div
+                          className="h-full transition-all duration-200"
+                          style={{
+                            width: `${nickFilmingProgress}%`,
+                            background:
+                              nickFilmingProgress > 75
+                                ? "linear-gradient(90deg, #ef4444, #dc2626)"
+                                : "linear-gradient(90deg, #f97316, #ef4444)",
+                            boxShadow:
+                              nickFilmingProgress > 75
+                                ? "0 0 8px #ef4444"
+                                : undefined,
                           }}
                         />
                       </div>
-                      <span className="text-[9px]">FILMING</span>
                     </div>
                   )}
                 </div>
@@ -774,17 +836,42 @@ export function ZoneSelector({ compact = false }: ZoneSelector.Props) {
                 </div>
               )}
 
-              {/* Filming warning */}
+              {/* Filming warning with progress for active zone */}
               {isNickHere && (
-                <div
-                  className="absolute top-1 right-1 text-[8px] px-1.5 py-0.5 rounded animate-warning-flash"
-                  style={{
-                    background: "var(--color-danger)",
-                    color: "white",
-                    fontFamily: "var(--font-mono)",
-                  }}
-                >
-                  FILMING
+                <div className="absolute top-1 right-1 flex flex-col items-end gap-0.5">
+                  <div
+                    className="text-[8px] px-1.5 py-0.5 rounded animate-warning-flash"
+                    style={{
+                      background: "var(--color-danger)",
+                      color: "white",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  >
+                    FILMING{" "}
+                    {isActive ? `${nickFilmingProgress.toFixed(0)}%` : ""}
+                  </div>
+                  {/* Filming progress bar (only for active zone) */}
+                  {isActive && nickFilmingProgress > 0 && (
+                    <div
+                      className="w-16 h-1 rounded-full overflow-hidden"
+                      style={{ background: "rgba(0,0,0,0.4)" }}
+                    >
+                      <div
+                        className="h-full transition-all duration-200"
+                        style={{
+                          width: `${nickFilmingProgress}%`,
+                          background:
+                            nickFilmingProgress > 75
+                              ? "linear-gradient(90deg, #ef4444, #dc2626)"
+                              : "linear-gradient(90deg, #f97316, #ef4444)",
+                          boxShadow:
+                            nickFilmingProgress > 75
+                              ? "0 0 6px #ef4444"
+                              : undefined,
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -953,17 +1040,45 @@ export function ZoneSelector({ compact = false }: ZoneSelector.Props) {
                 {/* Status stamp */}
                 <div className="mt-2 flex items-center justify-between">
                   {isActive ? (
-                    <div
-                      className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded flex items-center gap-1"
-                      style={{
-                        background: `${zone.color}50`,
-                        color: zone.color,
-                        fontFamily: "var(--font-mono)",
-                        textShadow: "0 1px 2px rgba(0,0,0,0.8)",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
-                      }}
-                    >
-                      <span className="animate-pulse">●</span> ACTIVE
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded flex items-center gap-1"
+                        style={{
+                          background: `${zone.color}50`,
+                          color: zone.color,
+                          fontFamily: "var(--font-mono)",
+                          textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                        }}
+                      >
+                        <span className="animate-pulse">●</span> ACTIVE
+                      </div>
+                      {hasExpertise ? (
+                        <div
+                          className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded flex items-center gap-1 animate-glow-pulse"
+                          style={{
+                            background: "rgba(250, 204, 21, 0.2)",
+                            color: "#facc15",
+                            fontFamily: "var(--font-mono)",
+                            border: "1px solid rgba(250, 204, 21, 0.4)",
+                          }}
+                        >
+                          ⭐ EXPERT +15%
+                        </div>
+                      ) : (
+                        expertiseProgress > 0 && (
+                          <div
+                            className="text-[8px] px-1.5 py-0.5 rounded flex items-center gap-1"
+                            style={{
+                              background: "rgba(250, 204, 21, 0.1)",
+                              color: "rgba(250, 204, 21, 0.6)",
+                              fontFamily: "var(--font-mono)",
+                            }}
+                          >
+                            ⭐ {expertiseProgress.toFixed(0)}%
+                          </div>
+                        )
+                      )}
                     </div>
                   ) : isUnlocked ? (
                     <div

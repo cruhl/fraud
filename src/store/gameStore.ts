@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { UPGRADES, type Upgrade } from "~/data/upgrades";
 import { ZONES, type Zone } from "~/data/zones";
+import { CREW_MEMBERS } from "~/data/crew";
 import { type PoliticalEvent, getRandomEvent } from "~/data/events";
 import { ACHIEVEMENTS } from "~/data/achievements";
 
@@ -23,6 +24,14 @@ export type GoldenClaim = {
   expiresAt: number;
 };
 
+export type ShredderMinigame = {
+  id: number;
+  startedAt: number;
+  clicks: number;
+  requiredClicks: number;
+  expiresAt: number;
+};
+
 export type LifetimeStats = {
   totalMoneyEarned: number;
   totalClaimsFiled: number;
@@ -41,6 +50,7 @@ export type GameState = {
   // Nick Shirley viral system (replaces suspicion)
   viralViews: number;
   nickShirleyLocation: string | null;
+  nickFilmingProgress: number; // 0-100, builds when Nick is in player's zone
   threatLevel: ThreatLevel;
   maxThreatLevelReached: ThreatLevel;
 
@@ -74,12 +84,26 @@ export type GameState = {
   lastGoldenClaimTime: number;
   discountEndTime: number | null;
 
+  // Shredder Minigame
+  shredderMinigame: ShredderMinigame | null;
+  lastShredderTime: number;
+
+  // Crew System
+  hiredCrew: string[];
+
+  // Tutorial/Onboarding
+  hasSeenTutorial: boolean;
+  hasSeenNickWarning: boolean; // First time views hit 1M
+
   // Lifetime Stats
   lifetimeStats: LifetimeStats;
 
   // Timing
   lastTick: number;
   gameStartTime: number;
+
+  // Zone specialization
+  zoneEnteredTime: number;
 };
 
 // Re-export for backwards compatibility
@@ -104,6 +128,10 @@ export type GameActions = {
   clickGoldenClaim: () => void;
   dismissGoldenClaim: () => void;
   unlockTrialAchievement: (type: "arrested" | "acquitted" | "maxSentence") => void;
+  clickShredder: () => void;
+  hireCrew: (crewId: string) => void;
+  dismissTutorial: () => void;
+  dismissNickWarning: () => void;
   newGame: () => void;
   fullReset: () => void;
 };
@@ -125,6 +153,7 @@ const INITIAL_STATE: GameState = {
   fakeClaims: 0,
   viralViews: 0,
   nickShirleyLocation: null,
+  nickFilmingProgress: 0,
   threatLevel: "safe",
   maxThreatLevelReached: "safe",
   isGameOver: false,
@@ -143,9 +172,15 @@ const INITIAL_STATE: GameState = {
   goldenClaim: null,
   lastGoldenClaimTime: 0,
   discountEndTime: null,
+  shredderMinigame: null,
+  lastShredderTime: 0,
+  hiredCrew: [],
+  hasSeenTutorial: false,
+  hasSeenNickWarning: false,
   lifetimeStats: INITIAL_LIFETIME_STATS,
   lastTick: Date.now(),
   gameStartTime: Date.now(),
+  zoneEnteredTime: Date.now(),
 };
 
 const VIRAL_THRESHOLD = 100_000_000; // 100 million views = game over
@@ -280,7 +315,17 @@ export const useGameStore = create<GameStore>()(
         const state = get();
         const zone = ZONES.find((z) => z.id === zoneId);
         if (!zone || state.unlockedZones.includes(zoneId)) return;
-        if (state.money < zone.unlockCost) return;
+        
+        // Calculate zone cost with crew discount
+        let zoneCost = zone.unlockCost;
+        state.hiredCrew?.forEach((crewId) => {
+          const crew = CREW_MEMBERS.find((c) => c.id === crewId);
+          if (crew?.effect.type === "zoneDiscountPercent") {
+            zoneCost = zoneCost * (1 - crew.effect.percent);
+          }
+        });
+        
+        if (state.money < zoneCost) return;
 
         set((s) => {
           const newZones = [...s.unlockedZones, zoneId];
@@ -304,9 +349,10 @@ export const useGameStore = create<GameStore>()(
           });
 
           return {
-            money: s.money - zone.unlockCost,
+            money: s.money - zoneCost,
             unlockedZones: newZones,
             activeZone: zoneId,
+            zoneEnteredTime: Date.now(),
             unlockedAchievements: newAchievements,
           };
         });
@@ -315,7 +361,9 @@ export const useGameStore = create<GameStore>()(
       setActiveZone: (zoneId: string) => {
         const state = get();
         if (!state.unlockedZones.includes(zoneId)) return;
-        set({ activeZone: zoneId });
+        // Reset zone entered time when switching zones (expertise resets)
+        // Also reset Nick filming progress (switching zones interrupts filming)
+        set({ activeZone: zoneId, zoneEnteredTime: Date.now(), nickFilmingProgress: 0 });
       },
 
       tick: () => {
@@ -344,6 +392,11 @@ export const useGameStore = create<GameStore>()(
           // Calculate passive income
           const passiveIncome = GameStore.getPassiveIncome(s);
           const viewDecay = GameStore.getViewDecay(s);
+
+          // Nick Shirley filming mechanics - declare early to use in view calculation
+          let nickLocation = s.nickShirleyLocation;
+          let nickFilmingProgress = s.nickFilmingProgress;
+          let filmingViewSpike = 0;
 
           // Random event trigger (0.08% chance per tick for balanced gameplay)
           let eventViewGain = 0;
@@ -392,6 +445,35 @@ export const useGameStore = create<GameStore>()(
 
           const passiveGain = passiveIncome * delta * incomeMultiplier + eventMoneyBonus;
 
+          // Random Nick Shirley location change (must happen before filming calculation)
+          if (Math.random() < 0.01) {
+            // Include all zones + null (not visible)
+            const zoneIds = ZONES.map((z) => z.id);
+            const locations: (string | null)[] = [...zoneIds, null];
+            const newLocation = locations[Math.floor(Math.random() * locations.length)];
+            
+            // If Nick moves away, reset filming progress
+            if (newLocation !== nickLocation && nickLocation === s.activeZone) {
+              nickFilmingProgress = 0;
+            }
+            nickLocation = newLocation;
+          }
+          
+          // Nick filming mechanic: builds when he's in player's zone
+          if (nickLocation === s.activeZone) {
+            // 10% per second = ~10 seconds to complete a segment
+            nickFilmingProgress = Math.min(100, nickFilmingProgress + 10 * delta);
+            
+            // When filming completes, trigger segment upload!
+            if (nickFilmingProgress >= 100) {
+              filmingViewSpike = 2_000_000; // +2M views
+              nickFilmingProgress = 0; // Reset for next segment
+            }
+          } else {
+            // Not in player's zone, reset progress
+            nickFilmingProgress = 0;
+          }
+
           // Passive income generates views (0.05x rate for balanced late-game)
           const passiveViewGain =
             passiveIncome > 0 ? passiveIncome * 0.05 * delta * viewMultiplier : 0;
@@ -399,7 +481,7 @@ export const useGameStore = create<GameStore>()(
           // Decay can only reduce passive view gains by up to 90% (always gain at least 10%)
           // This prevents "soft-lock" where decay upgrades completely zero out progress
           const effectiveDecay = Math.min(viewDecay * delta, passiveViewGain * 0.9);
-          const netViewChange = passiveViewGain - effectiveDecay + eventViewGain - eventViewReduction;
+          const netViewChange = passiveViewGain - effectiveDecay + eventViewGain - eventViewReduction + filmingViewSpike;
           const viewCap = GameStore.getViewCap(s);
           const newViews = Math.min(
             viewCap,
@@ -408,15 +490,6 @@ export const useGameStore = create<GameStore>()(
           const newThreatLevel = GameStore.getThreatLevel(newViews);
           const newMoney = s.money + passiveGain;
           const newTotal = s.totalEarned + (passiveGain > 0 ? passiveGain : 0);
-
-          // Random Nick Shirley location
-          let nickLocation = s.nickShirleyLocation;
-          if (Math.random() < 0.01) {
-            // Include all zones + null (not visible)
-            const zoneIds = ZONES.map((z) => z.id);
-            const locations: (string | null)[] = [...zoneIds, null];
-            nickLocation = locations[Math.floor(Math.random() * locations.length)];
-          }
 
           // Random golden claim spawn (every 30-90 seconds)
           let goldenClaim = s.goldenClaim;
@@ -453,6 +526,38 @@ export const useGameStore = create<GameStore>()(
             };
           }
 
+          // Shredder minigame spawn logic
+          let shredderMinigame = s.shredderMinigame;
+          let lastShredderTime = s.lastShredderTime;
+          let shredderViewPenalty = 0;
+          const SHREDDER_VIEW_THRESHOLD = 50_000_000; // 50M views
+          const SHREDDER_COOLDOWN = 60_000; // 60 seconds between shredder games
+          
+          // Check for shredder expiration (failure)
+          if (shredderMinigame && now > shredderMinigame.expiresAt) {
+            // Failed! +500K views penalty
+            shredderViewPenalty = 500_000;
+            shredderMinigame = null;
+          }
+          
+          // Spawn shredder when views > 50M (5% chance per tick, with cooldown)
+          const timeSinceLastShredder = now - lastShredderTime;
+          if (
+            !shredderMinigame && 
+            newViews >= SHREDDER_VIEW_THRESHOLD && 
+            timeSinceLastShredder >= SHREDDER_COOLDOWN &&
+            Math.random() < 0.05
+          ) {
+            shredderMinigame = {
+              id: now,
+              startedAt: now,
+              clicks: 0,
+              requiredClicks: 15, // Need 15 clicks in 3 seconds
+              expiresAt: now + 3000, // 3 seconds
+            };
+            lastShredderTime = now;
+          }
+
           // Update lifetime stats (with defaults for old saves)
           const currentTickStats = s.lifetimeStats ?? INITIAL_LIFETIME_STATS;
           const lifetimeStats = {
@@ -472,28 +577,37 @@ export const useGameStore = create<GameStore>()(
             newAchievements
           );
 
+          // Apply shredder failure penalty to views
+          const finalViews = Math.min(viewCap, Math.max(0, newViews + shredderViewPenalty));
+          const finalThreatLevel = shredderViewPenalty > 0 
+            ? GameStore.getThreatLevel(finalViews) 
+            : newThreatLevel;
+
           return {
             money: newMoney,
             totalEarned: newTotal,
-            viralViews: newViews,
-            threatLevel: newThreatLevel,
+            viralViews: finalViews,
+            threatLevel: finalThreatLevel,
             maxThreatLevelReached: GameStore.maxThreatLevel(
               s.maxThreatLevelReached,
-              newThreatLevel
+              finalThreatLevel
             ),
             lastTick: now,
-            isGameOver: newViews >= VIRAL_THRESHOLD,
+            isGameOver: finalViews >= VIRAL_THRESHOLD,
             isVictory: newTotal >= TARGET_AMOUNT,
             activeEvent,
             eventEndTime,
             isPaused,
             nickShirleyLocation: nickLocation,
+            nickFilmingProgress,
             unlockedAchievements: newAchievements,
             goldenClaim,
             lastGoldenClaimTime:
               goldenClaim && goldenClaim.id === now
                 ? now
                 : s.lastGoldenClaimTime,
+            shredderMinigame,
+            lastShredderTime,
             lifetimeStats,
           };
         });
@@ -543,6 +657,7 @@ export const useGameStore = create<GameStore>()(
           ...INITIAL_STATE,
           lastTick: Date.now(),
           gameStartTime: Date.now(),
+          zoneEnteredTime: Date.now(),
           totalArrestCount: get().totalArrestCount,
           prestigeBonuses: get().prestigeBonuses,
           unlockedAchievements: get().unlockedAchievements,
@@ -589,6 +704,7 @@ export const useGameStore = create<GameStore>()(
           fakeClaims: 0,
           viralViews: 0,
           nickShirleyLocation: null,
+          nickFilmingProgress: 0,
           threatLevel: "safe" as ThreatLevel,
           maxThreatLevelReached: "safe" as ThreatLevel,
           isGameOver: false,
@@ -688,6 +804,70 @@ export const useGameStore = create<GameStore>()(
         set({ goldenClaim: null });
       },
 
+      clickShredder: () => {
+        const state = get();
+        if (!state.shredderMinigame) return;
+        
+        const now = Date.now();
+        const shredder = state.shredderMinigame;
+        const newClicks = shredder.clicks + 1;
+        
+        // Check if succeeded (reached required clicks)
+        if (newClicks >= shredder.requiredClicks) {
+          // Success! -500K views
+          const viewReduction = 500_000;
+          const newViews = Math.max(0, state.viralViews - viewReduction);
+          set({
+            shredderMinigame: null,
+            viralViews: newViews,
+            threatLevel: GameStore.getThreatLevel(newViews),
+          });
+          return;
+        }
+        
+        // Still clicking
+        set({
+          shredderMinigame: { ...shredder, clicks: newClicks },
+        });
+      },
+
+      hireCrew: (crewId: string) => {
+        const state = get();
+        const crew = CREW_MEMBERS.find((c) => c.id === crewId);
+        if (!crew) return;
+        if (state.hiredCrew.includes(crewId)) return;
+        
+        // Apply zone discount if we have that crew member
+        let cost = crew.cost;
+        const hasZoneDiscount = state.hiredCrew.some((id) => {
+          const c = CREW_MEMBERS.find((m) => m.id === id);
+          return c?.effect.type === "zoneDiscountPercent";
+        });
+        if (hasZoneDiscount) {
+          const discountCrew = CREW_MEMBERS.find(
+            (c) => state.hiredCrew.includes(c.id) && c.effect.type === "zoneDiscountPercent"
+          );
+          if (discountCrew && discountCrew.effect.type === "zoneDiscountPercent") {
+            cost = cost * (1 - discountCrew.effect.percent);
+          }
+        }
+        
+        if (state.money < cost) return;
+        
+        set({
+          money: state.money - cost,
+          hiredCrew: [...state.hiredCrew, crewId],
+        });
+      },
+
+      dismissTutorial: () => {
+        set({ hasSeenTutorial: true });
+      },
+
+      dismissNickWarning: () => {
+        set({ hasSeenNickWarning: true });
+      },
+
       unlockTrialAchievement: (type: "arrested" | "acquitted" | "maxSentence") => {
         set((s) => {
           const newAchievements = [...s.unlockedAchievements];
@@ -711,6 +891,7 @@ export const useGameStore = create<GameStore>()(
           ...INITIAL_STATE,
           lastTick: Date.now(),
           gameStartTime: Date.now(),
+          zoneEnteredTime: Date.now(),
           totalArrestCount: state.totalArrestCount,
           prestigeBonuses: state.prestigeBonuses,
           unlockedAchievements: state.unlockedAchievements,
@@ -724,6 +905,7 @@ export const useGameStore = create<GameStore>()(
           ...INITIAL_STATE,
           lastTick: Date.now(),
           gameStartTime: Date.now(),
+          zoneEnteredTime: Date.now(),
           lifetimeStats: INITIAL_LIFETIME_STATS,
         });
       },
@@ -735,7 +917,22 @@ export const useGameStore = create<GameStore>()(
   )
 );
 
+// Zone expertise time threshold: 5 minutes in milliseconds
+const ZONE_EXPERTISE_TIME_MS = 5 * 60 * 1000;
+const ZONE_EXPERTISE_BONUS = 1.15; // +15% income bonus
+
 export namespace GameStore {
+  // Check if player has zone expertise (5+ minutes in current zone)
+  export const hasZoneExpertise = (state: GameState): boolean => {
+    const timeInZone = Date.now() - (state.zoneEnteredTime ?? Date.now());
+    return timeInZone >= ZONE_EXPERTISE_TIME_MS;
+  };
+
+  // Get zone expertise multiplier (1.15 if expert, 1 otherwise)
+  export const getZoneExpertiseBonus = (state: GameState): number => {
+    return hasZoneExpertise(state) ? ZONE_EXPERTISE_BONUS : 1;
+  };
+
   // Get the allBonusMultiplier from luxury upgrades
   export const getAllBonusMultiplier = (state: GameState): number => {
     let multiplier = 1;
@@ -774,11 +971,12 @@ export namespace GameStore {
 
     const prestigeMultiplier = getPrestigeMultiplier(state.totalArrestCount);
     const allBonusMultiplier = getAllBonusMultiplier(state);
+    const zoneExpertiseBonus = getZoneExpertiseBonus(state);
 
     // Victory bonus: +20% income if player has won before
     const victoryBonus = state.lifetimeStats?.fastestWinTime ? 1.2 : 1;
 
-    return Math.floor(base * multiplier * prestigeMultiplier * victoryBonus * allBonusMultiplier);
+    return Math.floor(base * multiplier * prestigeMultiplier * victoryBonus * allBonusMultiplier * zoneExpertiseBonus);
   };
 
   export const getPassiveIncome = (state: GameState): number => {
@@ -796,11 +994,12 @@ export namespace GameStore {
 
     const prestigeMultiplier = getPrestigeMultiplier(state.totalArrestCount);
     const allBonusMultiplier = getAllBonusMultiplier(state);
+    const zoneExpertiseBonus = getZoneExpertiseBonus(state);
 
     // Victory bonus: +20% income if player has won before
     const victoryBonus = state.lifetimeStats?.fastestWinTime ? 1.2 : 1;
 
-    return total * prestigeMultiplier * victoryBonus * allBonusMultiplier;
+    return total * prestigeMultiplier * victoryBonus * allBonusMultiplier * zoneExpertiseBonus;
   };
 
   export const getViewsGain = (state: GameState, zone: Zone): number => {
@@ -825,7 +1024,19 @@ export namespace GameStore {
     // Nick Shirley is in your zone = more views!
     if (state.nickShirleyLocation === zone.id) {
       multiplier *= 1.5;
+      // Extra filming bonus when he's actively recording in your zone
+      if (state.nickFilmingProgress > 0) {
+        multiplier *= 2; // 2x views while being filmed
+      }
     }
+
+    // Crew member view reduction
+    state.hiredCrew?.forEach((crewId) => {
+      const crew = CREW_MEMBERS.find((c) => c.id === crewId);
+      if (crew?.effect.type === "viewGainReduction") {
+        multiplier *= 1 - crew.effect.percent;
+      }
+    });
 
     return Math.floor(base * multiplier);
   };
@@ -851,7 +1062,16 @@ export namespace GameStore {
     // Prestige bonus: +5% view decay per arrest
     const prestigeDecayBonus = 1 + state.totalArrestCount * 0.05;
 
-    return total * multiplier * prestigeDecayBonus;
+    // Crew member view decay bonus
+    let crewDecayBonus = 0;
+    state.hiredCrew?.forEach((crewId) => {
+      const crew = CREW_MEMBERS.find((c) => c.id === crewId);
+      if (crew?.effect.type === "viewDecayBonus") {
+        crewDecayBonus += crew.effect.amount;
+      }
+    });
+
+    return (total + crewDecayBonus) * multiplier * prestigeDecayBonus;
   };
 
   export const getViewCap = (state: GameState): number => {
@@ -863,6 +1083,14 @@ export namespace GameStore {
 
       if (upgrade.effect.type === "viewCap") {
         cap = Math.min(cap, upgrade.effect.amount);
+      }
+    });
+
+    // Crew member view cap reduction
+    state.hiredCrew?.forEach((crewId) => {
+      const crew = CREW_MEMBERS.find((c) => c.id === crewId);
+      if (crew?.effect.type === "viewCapReduction") {
+        cap = Math.max(50_000_000, cap - crew.effect.amount); // Don't reduce below 50M
       }
     });
 
@@ -1059,6 +1287,10 @@ export namespace GameStore {
         bonus += upgrade.effect.acquittalChance * owned;
       }
     });
+    
+    // Add crew acquittal bonus
+    bonus += getCrewAcquittalBonus(state);
+    
     return Math.min(0.8, bonus); // Cap at 80% bonus
   };
 
@@ -1121,6 +1353,34 @@ export namespace GameStore {
   /**
    * Get acquittal chance for expensive lawyer (5-12% based on evidence)
    */
+  /**
+   * Get zone unlock cost with crew discount applied
+   */
+  export const getZoneCost = (state: GameState, zone: Zone): number => {
+    let cost = zone.unlockCost;
+    state.hiredCrew?.forEach((crewId) => {
+      const crew = CREW_MEMBERS.find((c) => c.id === crewId);
+      if (crew?.effect.type === "zoneDiscountPercent") {
+        cost = cost * (1 - crew.effect.percent);
+      }
+    });
+    return Math.floor(cost);
+  };
+
+  /**
+   * Get acquittal bonus from hired crew members
+   */
+  export const getCrewAcquittalBonus = (state: GameState): number => {
+    let bonus = 0;
+    state.hiredCrew?.forEach((crewId) => {
+      const crew = CREW_MEMBERS.find((c) => c.id === crewId);
+      if (crew?.effect.type === "trialAcquittalBonus") {
+        bonus += crew.effect.percent;
+      }
+    });
+    return bonus;
+  };
+
   export const getExpensiveLawyerAcquittalChance = (
     evidenceStrength: number, 
     trialBonus: number
