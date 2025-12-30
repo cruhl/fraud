@@ -1,6 +1,7 @@
 import { useGameStore } from "~/store/gameStore";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import type { PoliticalEvent } from "~/data/events";
+import { playSound } from "~/hooks/useAudio";
 
 function getEventMultipliers(event: PoliticalEvent) {
   let incomeMultiplier = 1;
@@ -23,6 +24,15 @@ export function EventBanner() {
   const activeEvent = useGameStore((s) => s.activeEvent);
   const eventEndTime = useGameStore((s) => s.eventEndTime);
   const [timeLeft, setTimeLeft] = useState(0);
+  const prevEventIdRef = useRef<string | null>(null);
+
+  // Play sound when a new event appears
+  useEffect(() => {
+    if (activeEvent && activeEvent.id !== prevEventIdRef.current) {
+      playSound("event");
+    }
+    prevEventIdRef.current = activeEvent?.id ?? null;
+  }, [activeEvent]);
 
   useEffect(() => {
     if (!eventEndTime) return;

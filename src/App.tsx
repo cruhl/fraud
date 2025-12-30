@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useGameStore, GameStore } from "~/store/gameStore";
 import { Clicker } from "~/components/Clicker";
 import { Counter } from "~/components/Counter";
@@ -18,6 +18,7 @@ import {
   isSoundEnabled,
   setSoundEnabled,
   MusicManager,
+  playSound,
 } from "~/hooks/useAudio";
 
 type MobileTab = "play" | "zones" | "shop" | "stats";
@@ -42,6 +43,10 @@ export function App() {
   const [isShaking, setIsShaking] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("play");
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  // Refs to track previous values for sound triggers
+  const prevNickLocationRef = useRef<string | null>(null);
+  const prevThreatLevelRef = useRef(threatLevel);
 
   const toggleSound = useCallback(() => {
     const newValue = !soundOn;
@@ -79,6 +84,29 @@ export function App() {
       return () => clearTimeout(timer);
     }
   }, [activeEvent?.id]);
+
+  // Nick Shirley alert sound when he enters the player's active zone
+  useEffect(() => {
+    if (
+      nickShirleyLocation === activeZone &&
+      nickShirleyLocation !== null &&
+      prevNickLocationRef.current !== activeZone
+    ) {
+      playSound("nickNearby");
+    }
+    prevNickLocationRef.current = nickShirleyLocation;
+  }, [nickShirleyLocation, activeZone]);
+
+  // Threat level escalation sound
+  useEffect(() => {
+    const prevIndex = GameStore.THREAT_LEVEL_ORDER.indexOf(prevThreatLevelRef.current);
+    const currentIndex = GameStore.THREAT_LEVEL_ORDER.indexOf(threatLevel);
+    if (currentIndex > prevIndex && currentIndex >= 2) {
+      // Play sound when threat escalates to "gaining-traction" or higher
+      playSound("event");
+    }
+    prevThreatLevelRef.current = threatLevel;
+  }, [threatLevel]);
 
   const hasEvent = !!activeEvent;
   const isHighDanger = viralViews >= 50_000_000;
@@ -135,7 +163,7 @@ export function App() {
 
       {/* Compact Header */}
       <header
-        className={`relative text-center py-3 md:py-6 border-b overflow-hidden ${
+        className={`relative border-b overflow-hidden ${
           hasEvent ? "mt-14" : ""
         }`}
         style={{
@@ -161,96 +189,97 @@ export function App() {
           </div>
         </div>
 
-        {/* Desktop header buttons - inside header for proper layout */}
-        <div className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 items-center gap-2">
-          {/* Music Toggle + Volume */}
-          <div
-            className="flex items-center gap-1 px-2 py-1.5 rounded-lg transition-all"
-            style={{
-              background: "var(--color-bg-elevated)",
-              border: "1px solid var(--color-border-highlight)",
-              boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
-            }}
-          >
-            <button
-              onClick={toggleMusic}
-              className="text-lg px-1 hover:scale-105 transition-transform"
-              title={musicOn ? "Music On" : "Music Off"}
-            >
-              {musicOn ? "🎵" : "🎵"}
-            </button>
-            {musicOn && (
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={musicVolume}
-                onChange={(e) => handleMusicVolume(parseFloat(e.target.value))}
-                className="w-16 h-1 rounded-full appearance-none cursor-pointer"
-                style={{ background: "var(--color-border-highlight)" }}
-                title={`Volume: ${Math.round(musicVolume * 100)}%`}
-              />
-            )}
-            {/* SFX Toggle */}
-            <button
-              onClick={toggleSound}
-              className="text-lg px-1 hover:scale-105 transition-transform"
-              title={soundOn ? "SFX On" : "SFX Off"}
-            >
-              {soundOn ? "🔊" : "🔇"}
-            </button>
-          </div>
-          {/* New Game */}
-          <NewGameModal />
-          {/* Achievements */}
-          <Achievements />
-          {/* Stats */}
-          <StatsModal />
-        </div>
+        {/* Header content - flex layout */}
+        <div className="relative z-10 flex items-center justify-between px-3 md:px-6 py-3 md:py-4">
+          {/* Left spacer for mobile menu button */}
+          <div className="w-10 md:hidden" />
 
-        {/* Main title */}
-        <div className="relative z-10 px-12 md:px-4">
-          <h1
-            className="text-xl sm:text-3xl md:text-5xl lg:text-6xl tracking-wider"
-            style={{
-              fontFamily: "var(--font-display)",
-              background:
-                "linear-gradient(135deg, var(--color-danger-bright), var(--color-corruption), var(--color-money-bright))",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            MINNESOTA FRAUD EMPIRE
-          </h1>
-          {/* Tagline */}
-          <p
-            className="mt-1 text-[10px] sm:text-xs md:text-sm tracking-wide"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            $9 Billion. 14 Programs. One YouTuber.
-          </p>
-          {/* Prestige badge - inline on mobile */}
-          {totalArrestCount > 0 && (
-            <div
-              className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[10px] md:text-xs"
+          {/* Center - Title */}
+          <div className="flex-1 text-center">
+            <h1
+              className="text-lg sm:text-2xl md:text-4xl lg:text-5xl tracking-wider"
               style={{
-                background: "var(--color-corruption)20",
-                border: "1px solid var(--color-corruption-dim)",
+                fontFamily: "var(--font-display)",
+                background:
+                  "linear-gradient(135deg, var(--color-danger-bright), var(--color-corruption), var(--color-money-bright))",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
               }}
             >
-              <span style={{ color: "var(--color-corruption)" }}>⭐</span>
-              <span
+              MINNESOTA FRAUD EMPIRE
+            </h1>
+            {/* Tagline - hidden on very small screens */}
+            <p
+              className="mt-0.5 text-[9px] sm:text-xs md:text-sm tracking-wide hidden xs:block"
+              style={{ color: "var(--color-text-muted)" }}
+            >
+              $9 Billion. 14 Programs. One YouTuber.
+            </p>
+            {/* Prestige badge */}
+            {totalArrestCount > 0 && (
+              <div
+                className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] md:text-xs"
                 style={{
-                  color: "var(--color-corruption)",
-                  fontFamily: "var(--font-mono)",
+                  background: "var(--color-corruption)20",
+                  border: "1px solid var(--color-corruption-dim)",
                 }}
               >
-                +{GameStore.getPrestigeBonusPercent(totalArrestCount)}% INCOME
-              </span>
+                <span style={{ color: "var(--color-corruption)" }}>⭐</span>
+                <span
+                  style={{
+                    color: "var(--color-corruption)",
+                    fontFamily: "var(--font-mono)",
+                  }}
+                >
+                  +{GameStore.getPrestigeBonusPercent(totalArrestCount)}% INCOME
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Right - Desktop controls */}
+          <div className="hidden md:flex items-center gap-2 shrink-0">
+            {/* Music Toggle + Volume */}
+            <div
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg"
+              style={{
+                background: "var(--color-bg-elevated)",
+                border: "1px solid var(--color-border-highlight)",
+              }}
+            >
+              <button
+                onClick={toggleMusic}
+                className="text-base hover:scale-105 transition-transform"
+                title={musicOn ? "Music On" : "Music Off"}
+              >
+                🎵
+              </button>
+              {musicOn && (
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={musicVolume}
+                  onChange={(e) => handleMusicVolume(parseFloat(e.target.value))}
+                  className="w-14 h-1 rounded-full appearance-none cursor-pointer"
+                  style={{ background: "var(--color-border-highlight)" }}
+                  title={`Volume: ${Math.round(musicVolume * 100)}%`}
+                />
+              )}
+              <button
+                onClick={toggleSound}
+                className="text-base hover:scale-105 transition-transform"
+                title={soundOn ? "SFX On" : "SFX Off"}
+              >
+                {soundOn ? "🔊" : "🔇"}
+              </button>
             </div>
-          )}
+            <NewGameModal />
+            <Achievements />
+            <StatsModal />
+          </div>
         </div>
       </header>
 

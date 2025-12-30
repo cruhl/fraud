@@ -2,14 +2,23 @@ import { useCallback, useRef, useEffect } from "react";
 
 export type SoundType =
   | "click"
+  | "clickMedium"
+  | "clickLarge"
   | "purchase"
   | "achievement"
   | "event"
   | "gameOver"
   | "victory"
   | "zoneUnlock"
+  | "zoneSwitch"
   | "goldenClaim"
-  | "nickNearby";
+  | "nickNearby"
+  | "threatEscalate"
+  | "timerWarning"
+  | "trialGavel"
+  | "verdictGood"
+  | "verdictBad"
+  | "discountActive";
 
 // Web Audio API synth sounds - no external files needed
 const createOscillator = (
@@ -38,6 +47,22 @@ const playClick = (ctx: AudioContext) => {
   // Cash register "cha-ching" - two quick high notes
   createOscillator(ctx, 1200, "sine", 0.05, 0.2);
   setTimeout(() => createOscillator(ctx, 1800, "sine", 0.08, 0.15), 50);
+};
+
+const playClickMedium = (ctx: AudioContext) => {
+  // Deeper, more resonant money sound for medium clicks ($10K-$1M)
+  createOscillator(ctx, 800, "sine", 0.08, 0.25);
+  setTimeout(() => createOscillator(ctx, 1200, "sine", 0.1, 0.2), 40);
+  setTimeout(() => createOscillator(ctx, 1600, "sine", 0.08, 0.15), 80);
+};
+
+const playClickLarge = (ctx: AudioContext) => {
+  // Big money sound with presence for large clicks ($1M+)
+  createOscillator(ctx, 600, "sine", 0.12, 0.3);
+  createOscillator(ctx, 750, "sine", 0.12, 0.2);
+  setTimeout(() => createOscillator(ctx, 900, "sine", 0.1, 0.25), 50);
+  setTimeout(() => createOscillator(ctx, 1200, "sine", 0.1, 0.2), 100);
+  setTimeout(() => createOscillator(ctx, 1800, "sine", 0.08, 0.15), 150);
 };
 
 const playPurchase = (ctx: AudioContext) => {
@@ -120,8 +145,8 @@ const playGoldenClaim = (ctx: AudioContext) => {
 };
 
 const playNickNearby = (ctx: AudioContext) => {
-  // Camera shutter clicks
-  [100, 80, 120].forEach((freq, i) => {
+  // Camera shutter clicks - rapid fire when Nick enters zone
+  [100, 80, 120, 90, 110].forEach((freq, i) => {
     setTimeout(() => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -129,24 +154,112 @@ const playNickNearby = (ctx: AudioContext) => {
       osc.frequency.value = freq;
       osc.connect(gain);
       gain.connect(ctx.destination);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.02);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.03);
       osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.02);
-    }, i * 150);
+      osc.stop(ctx.currentTime + 0.03);
+    }, i * 100);
+  });
+};
+
+const playZoneSwitch = (ctx: AudioContext) => {
+  // Quick UI confirmation - soft whoosh
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.frequency.setValueAtTime(400, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1);
+  gain.gain.setValueAtTime(0.1, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.15);
+};
+
+const playThreatEscalate = (ctx: AudioContext) => {
+  // Ominous rising tone when threat level increases
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sawtooth";
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.frequency.setValueAtTime(150, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.4);
+  gain.gain.setValueAtTime(0.08, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.5);
+};
+
+const playTimerWarning = (ctx: AudioContext) => {
+  // Urgent beeping for golden claim about to expire
+  [1000, 1000, 1200].forEach((freq, i) => {
+    setTimeout(() => createOscillator(ctx, freq, "square", 0.08, 0.15), i * 120);
+  });
+};
+
+const playTrialGavel = (ctx: AudioContext) => {
+  // Courtroom gavel - deep thud with reverb-like decay
+  createOscillator(ctx, 100, "sine", 0.15, 0.4);
+  createOscillator(ctx, 150, "triangle", 0.1, 0.25);
+  setTimeout(() => createOscillator(ctx, 80, "sine", 0.2, 0.15), 50);
+};
+
+const playVerdictGood = (ctx: AudioContext) => {
+  // Relief chord - ascending hopeful progression
+  [392, 494, 587].forEach((freq) => {
+    createOscillator(ctx, freq, "sine", 0.4, 0.18);
+  });
+  setTimeout(() => {
+    [440, 554, 659].forEach((freq) => {
+      createOscillator(ctx, freq, "sine", 0.5, 0.15);
+    });
+  }, 250);
+};
+
+const playVerdictBad = (ctx: AudioContext) => {
+  // Doom chord - descending ominous progression
+  [300, 350, 450].forEach((freq) => {
+    createOscillator(ctx, freq, "sawtooth", 0.4, 0.12);
+  });
+  setTimeout(() => {
+    [250, 300, 400].forEach((freq) => {
+      createOscillator(ctx, freq, "sawtooth", 0.5, 0.1);
+    });
+  }, 300);
+};
+
+const playDiscountActive = (ctx: AudioContext) => {
+  // Cash register flourish - excited arpeggio
+  [600, 800, 1000, 1200, 1400].forEach((freq, i) => {
+    setTimeout(() => createOscillator(ctx, freq, "sine", 0.12, 0.18), i * 50);
   });
 };
 
 const SOUND_PLAYERS: Record<SoundType, (ctx: AudioContext) => void> = {
   click: playClick,
+  clickMedium: playClickMedium,
+  clickLarge: playClickLarge,
   purchase: playPurchase,
   achievement: playAchievement,
   event: playEvent,
   gameOver: playGameOver,
   victory: playVictory,
   zoneUnlock: playZoneUnlock,
+  zoneSwitch: playZoneSwitch,
   goldenClaim: playGoldenClaim,
   nickNearby: playNickNearby,
+  threatEscalate: playThreatEscalate,
+  timerWarning: playTimerWarning,
+  trialGavel: playTrialGavel,
+  verdictGood: playVerdictGood,
+  verdictBad: playVerdictBad,
+  discountActive: playDiscountActive,
 };
 
 export const useAudio = () => {
