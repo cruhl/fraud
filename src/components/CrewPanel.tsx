@@ -201,9 +201,6 @@ export function CrewPanel() {
                 case "zoneDiscountPercent":
                   effectText = `-${(crew.effect.percent * 100).toFixed(0)}% zone costs`;
                   break;
-                case "viewCapReduction":
-                  effectText = `-${(crew.effect.amount / 1_000_000).toFixed(0)}M cap`;
-                  break;
               }
               
               return (

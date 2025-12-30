@@ -1033,17 +1033,6 @@ export const UPGRADES: Upgrade[] = [
     maxQuantity: 1,
   },
   {
-    id: "burner-phone-network",
-    zone: "endgame",
-    name: "Burner Phone Network",
-    description: "+$25000/sec passive income",
-    flavorText: "Untraceable communication empire",
-    baseCost: 60_000_000,
-    costMultiplier: 2.0,
-    effect: { type: "passiveIncome", amount: 25000 },
-    icon: "📵",
-  },
-  {
     id: "double-life",
     zone: "shadow-banking",
     name: "Double Life",

@@ -478,10 +478,10 @@ export const useGameStore = create<GameStore>()(
           const passiveViewGain =
             passiveIncome > 0 ? passiveIncome * 0.05 * delta * viewMultiplier : 0;
           
-          // Decay can only reduce passive view gains by up to 90% (always gain at least 10%)
-          // This prevents "soft-lock" where decay upgrades completely zero out progress
-          const effectiveDecay = Math.min(viewDecay * delta, passiveViewGain * 0.9);
-          const netViewChange = passiveViewGain - effectiveDecay + eventViewGain - eventViewReduction + filmingViewSpike;
+          // View decay always applies to reduce existing views
+          // But cap so we never decay more than current views (prevent negative)
+          const decayAmount = viewDecay * delta;
+          const netViewChange = passiveViewGain - decayAmount + eventViewGain - eventViewReduction + filmingViewSpike;
           const viewCap = GameStore.getViewCap(s);
           const newViews = Math.min(
             viewCap,
@@ -1083,14 +1083,6 @@ export namespace GameStore {
 
       if (upgrade.effect.type === "viewCap") {
         cap = Math.min(cap, upgrade.effect.amount);
-      }
-    });
-
-    // Crew member view cap reduction
-    state.hiredCrew?.forEach((crewId) => {
-      const crew = CREW_MEMBERS.find((c) => c.id === crewId);
-      if (crew?.effect.type === "viewCapReduction") {
-        cap = Math.max(50_000_000, cap - crew.effect.amount); // Don't reduce below 50M
       }
     });
 

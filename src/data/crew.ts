@@ -17,8 +17,7 @@ export type CrewEffect =
   | { type: "viewGainReduction"; percent: number } // Reduces view gain by X%
   | { type: "viewDecayBonus"; amount: number } // Adds X views/sec decay
   | { type: "trialAcquittalBonus"; percent: number } // Adds X% to acquittal chance
-  | { type: "zoneDiscountPercent"; percent: number } // Reduces zone costs by X%
-  | { type: "viewCapReduction"; amount: number }; // Reduces view cap by X
+  | { type: "zoneDiscountPercent"; percent: number }; // Reduces zone costs by X%
 
 export const CREW_MEMBERS: CrewMember[] = [
   {
@@ -63,8 +62,8 @@ export const CREW_MEMBERS: CrewMember[] = [
     role: "Federal Bench",
     imageId: "federal-judge",
     cost: 75_000_000,
-    description: "Sympathetic to your \"charity work.\" -5M view cap.",
-    effect: { type: "viewCapReduction", amount: 5_000_000 },
+    description: "Sympathetic to your \"charity work.\" +15% trial acquittal chance.",
+    effect: { type: "trialAcquittalBonus", percent: 0.15 },
   },
 ];
 
